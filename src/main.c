@@ -23,6 +23,7 @@ uint32_t status;
 __IO uint16_t ADC_values[ARRAYSIZE];
 uint64_t timer = 0;
 uint16_t Timer3Period = (uint16_t) 665;
+uint8_t enableL = 1, enableR = 1;
 
 /* Private function prototypes -----------------------------------------------*/
 //void RCC_Configuration(void);
@@ -56,27 +57,15 @@ int main(void)
 	RCC_APB2PeriphClockCmd(RCC_APB2Periph_GPIOA | RCC_APB2Periph_GPIOB, ENABLE);
 
 	/* Configure PA.00 pin as input floating */
-	GPIO_InitStructure.GPIO_Pin = GPIO_Pin_0 | GPIO_Pin_1;
+	GPIO_InitStructure.GPIO_Pin = GPIO_Pin_0 | GPIO_Pin_1 | GPIO_Pin_2 | GPIO_Pin_3;
 	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_IN_FLOATING;
 	GPIO_Init(GPIOA, &GPIO_InitStructure);
 
 	/* Configure PWM outputs */
-	GPIO_InitStructure.GPIO_Pin = GPIO_Pin_7;
-	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_Out_PP;
-	GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
-	GPIO_Init(GPIOA, &GPIO_InitStructure);
-
-	/* Configure PWM outputs */
-	GPIO_InitStructure.GPIO_Pin = GPIO_Pin_6;
+	GPIO_InitStructure.GPIO_Pin = GPIO_Pin_6 | GPIO_Pin_7;
 	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_AF_PP;
 	GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
 	GPIO_Init(GPIOA, &GPIO_InitStructure);
-
-	/* Configure PWM outputs TIM3_CH3 */
-	GPIO_InitStructure.GPIO_Pin = GPIO_Pin_0;
-	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_AF_PP;
-	GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
-	GPIO_Init(GPIOB, &GPIO_InitStructure);
 
 	/* Enable AFIO clock */
 	RCC_APB2PeriphClockCmd(RCC_APB2Periph_AFIO, ENABLE);
@@ -125,13 +114,6 @@ int main(void)
 	TIM_OC2Init(TIM3, &TIM_OCInitStructure);
 	TIM_OC2PreloadConfig(TIM3, TIM_OCPreload_Enable);
 
-	/* PWM1 Mode configuration: Channel3 */
-	TIM_OCInitStructure.TIM_OutputState = TIM_OutputState_Enable;
-	TIM_OCInitStructure.TIM_Pulse = 0;
-
-	TIM_OC3Init(TIM3, &TIM_OCInitStructure);
-	TIM_OC3PreloadConfig(TIM3, TIM_OCPreload_Enable);
-
 	TIM_ARRPreloadConfig(TIM3, ENABLE);
 
 	/* TIM3 enable counter */
@@ -139,17 +121,18 @@ int main(void)
 
 	while (1)
 	{
-//		if (timer >= 4000000) {
-//			volatile int a = min_value;
-//			volatile int b = max_value;
-//		}
-		if (GPIO_ReadInputDataBit(GPIOA, GPIO_Pin_1))
-			GPIO_SetBits(GPIOA, GPIO_Pin_7);
-		else
-			GPIO_ResetBits(GPIOA, GPIO_Pin_7);
+//		if (GPIO_ReadInputDataBit(GPIOA, GPIO_Pin_1))
+//			GPIO_SetBits(GPIOA, GPIO_Pin_7);
+//		else
+//			GPIO_ResetBits(GPIOA, GPIO_Pin_7);
+		enableL = GPIO_ReadInputDataBit(GPIOA, GPIO_Pin_2);
+		enableR = GPIO_ReadInputDataBit(GPIOA, GPIO_Pin_3);
 
-//		GPIO_Set
-//		timer++;
+		if (!enableL || !enableR) {
+			TIM_SetCompare1(TIM3, 0);
+			TIM_SetCompare2(TIM3, 0);
+		}
+
 	}
 
 }

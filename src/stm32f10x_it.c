@@ -26,9 +26,11 @@
 //#include "_write.c"
 
 uint64_t ppmChannel0 = 0;
+uint32_t left, right;
 
 extern uint64_t timer;
 extern uint16_t Timer3Period;
+extern uint8_t enableL, enableR;
 
 /** @addtogroup STM32F10x_StdPeriph_Examples
   * @{
@@ -163,8 +165,15 @@ void EXTI0_IRQHandler(void)
     	 int actual = timer;
     	 volatile int diff = actual - ppmChannel0;
 
-    	 if (diff < 2380 && diff > 1780) {
-    		 TIM_SetCompare1(TIM3, Timer3Period * ((diff - 1787) / 570.0));
+    	 // Turn right
+    	 if (diff > 1320 && diff < 1990 && enableR) {
+    		 TIM_SetCompare1(TIM3, Timer3Period * ((diff - 1320) / 670.0));
+    		 TIM_SetCompare2(TIM3, 0);
+    	 }
+    	 // Turn left
+    	 else if (diff < 1320 && diff > 651 && enableL) {
+    		 TIM_SetCompare2(TIM3, Timer3Period * ((1320 - diff) / 670.0));
+    		 TIM_SetCompare1(TIM3, 0);
     	 }
 
     	 ppmChannel0 = actual;
