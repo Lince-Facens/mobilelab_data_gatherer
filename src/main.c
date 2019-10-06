@@ -67,6 +67,12 @@ int main(void)
 	GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
 	GPIO_Init(GPIOA, &GPIO_InitStructure);
 
+	/* Configure PWM outputs */
+	GPIO_InitStructure.GPIO_Pin = GPIO_Pin_0;
+	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_AF_PP;
+	GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
+	GPIO_Init(GPIOB, &GPIO_InitStructure);
+
 	/* Enable AFIO clock */
 	RCC_APB2PeriphClockCmd(RCC_APB2Periph_AFIO, ENABLE);
 
@@ -80,15 +86,29 @@ int main(void)
 	EXTI_InitStructure.EXTI_LineCmd = ENABLE;
 	EXTI_Init(&EXTI_InitStructure);
 
-//	/* Enable and set EXTI0 Interrupt to the lowest priority */
+	/* Configure EXTI1 line */
+	EXTI_InitStructure.EXTI_Line = EXTI_Line1;
+	EXTI_InitStructure.EXTI_Mode = EXTI_Mode_Interrupt;
+	EXTI_InitStructure.EXTI_Trigger = EXTI_Trigger_Rising_Falling;
+	EXTI_InitStructure.EXTI_LineCmd = ENABLE;
+	EXTI_Init(&EXTI_InitStructure);
+
+	/* Enable and set EXTI0 Interrupt to the lowest priority */
 	NVIC_InitStructure.NVIC_IRQChannel = EXTI0_IRQn;
 	NVIC_InitStructure.NVIC_IRQChannelPreemptionPriority = 0x00;
 	NVIC_InitStructure.NVIC_IRQChannelSubPriority = 0x00;
 	NVIC_InitStructure.NVIC_IRQChannelCmd = ENABLE;
 	NVIC_Init(&NVIC_InitStructure);
 
+	/* Enable and set EXTI0 Interrupt to the lowest priority */
+	NVIC_InitStructure.NVIC_IRQChannel = EXTI1_IRQn;
+	NVIC_InitStructure.NVIC_IRQChannelPreemptionPriority = 0x00;
+	NVIC_InitStructure.NVIC_IRQChannelSubPriority = 0x00;
+	NVIC_InitStructure.NVIC_IRQChannelCmd = ENABLE;
+	NVIC_Init(&NVIC_InitStructure);
+
 	/* Compute the prescaler value */
-	int PrescalerValue = (uint16_t) (SystemCoreClock / 24000000) - 1;
+	int PrescalerValue = (uint16_t) (SystemCoreClock / (2*24000000)) - 1;
 	/* Time base configuration */
 	TIM_TimeBaseStructure.TIM_Period = Timer3Period ;
 	TIM_TimeBaseStructure.TIM_Prescaler = PrescalerValue;
@@ -113,6 +133,13 @@ int main(void)
 
 	TIM_OC2Init(TIM3, &TIM_OCInitStructure);
 	TIM_OC2PreloadConfig(TIM3, TIM_OCPreload_Enable);
+
+	/* PWM1 Mode configuration: Channel3 */
+	TIM_OCInitStructure.TIM_OutputState = TIM_OutputState_Enable;
+	TIM_OCInitStructure.TIM_Pulse = 0;
+
+	TIM_OC3Init(TIM3, &TIM_OCInitStructure);
+	TIM_OC3PreloadConfig(TIM3, TIM_OCPreload_Enable);
 
 	TIM_ARRPreloadConfig(TIM3, ENABLE);
 
