@@ -14,6 +14,7 @@
 /* Private define ------------------------------------------------------------*/
 #define ADC1_DR    ((uint32_t)0x4001244C)
 #define ARRAYSIZE 3
+#define LED	GPIO_Pin_13
 
 /* Private macro -------------------------------------------------------------*/
 /* Private variables ---------------------------------------------------------*/
@@ -54,10 +55,10 @@ int main(void)
 	RCC_APB1PeriphClockCmd(RCC_APB1Periph_TIM3, ENABLE);
 
 	/* Enable GPIOA clock */
-	RCC_APB2PeriphClockCmd(RCC_APB2Periph_GPIOA | RCC_APB2Periph_GPIOB, ENABLE);
+	RCC_APB2PeriphClockCmd(RCC_APB2Periph_GPIOA | RCC_APB2Periph_GPIOB | RCC_APB2Periph_GPIOC, ENABLE);
 
 	/* Configure PA.00 pin as input floating */
-	GPIO_InitStructure.GPIO_Pin = GPIO_Pin_0 | GPIO_Pin_1 | GPIO_Pin_2 | GPIO_Pin_3;
+	GPIO_InitStructure.GPIO_Pin = GPIO_Pin_0 | GPIO_Pin_1;
 	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_IN_FLOATING;
 	GPIO_Init(GPIOA, &GPIO_InitStructure);
 
@@ -73,11 +74,22 @@ int main(void)
 	GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
 	GPIO_Init(GPIOB, &GPIO_InitStructure);
 
+	GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
+	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_Out_PP;
+	GPIO_InitStructure.GPIO_Pin = LED;
+	GPIO_Init(GPIOC, &GPIO_InitStructure);
+
+	GPIO_InitStructure.GPIO_Pin = GPIO_Pin_12 | GPIO_Pin_13;
+	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_IN_FLOATING;
+	GPIO_Init(GPIOB, &GPIO_InitStructure);
+
 	/* Enable AFIO clock */
 	RCC_APB2PeriphClockCmd(RCC_APB2Periph_AFIO, ENABLE);
 
 	/* Connect EXTI0 Line to PA.00 pin */
 	GPIO_EXTILineConfig(GPIO_PortSourceGPIOA, GPIO_PinSource0);
+
+	GPIO_EXTILineConfig(GPIO_PortSourceGPIOA, GPIO_PinSource1);
 
 	/* Configure EXTI0 line */
 	EXTI_InitStructure.EXTI_Line = EXTI_Line0;
@@ -108,7 +120,8 @@ int main(void)
 	NVIC_Init(&NVIC_InitStructure);
 
 	/* Compute the prescaler value */
-	int PrescalerValue = (uint16_t) (SystemCoreClock / (2*24000000)) - 1;
+	int PrescalerValue = (uint16_t) (SystemCoreClock / (50000)) - 1;
+//	int PrescalerValue = (uint16_t) (SystemCoreClock / (1000000)) - 1;
 	/* Time base configuration */
 	TIM_TimeBaseStructure.TIM_Period = Timer3Period ;
 	TIM_TimeBaseStructure.TIM_Prescaler = PrescalerValue;
@@ -152,12 +165,16 @@ int main(void)
 //			GPIO_SetBits(GPIOA, GPIO_Pin_7);
 //		else
 //			GPIO_ResetBits(GPIOA, GPIO_Pin_7);
-		enableL = GPIO_ReadInputDataBit(GPIOA, GPIO_Pin_2);
-		enableR = GPIO_ReadInputDataBit(GPIOA, GPIO_Pin_3);
+		enableL = GPIO_ReadInputDataBit(GPIOB, GPIO_Pin_12);
+		enableR = GPIO_ReadInputDataBit(GPIOB, GPIO_Pin_13);
 
-		if (!enableL || !enableR) {
+		if (enableL || enableR) {
 			TIM_SetCompare1(TIM3, 0);
 			TIM_SetCompare2(TIM3, 0);
+			GPIO_ResetBits(GPIOC, LED);
+		}
+		else {
+			GPIO_SetBits(GPIOC, LED);
 		}
 
 	}

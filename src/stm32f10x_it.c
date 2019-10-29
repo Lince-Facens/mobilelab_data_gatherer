@@ -156,6 +156,7 @@ void SysTick_Handler(void)
  */
 void EXTI0_IRQHandler(void)
 {
+	int max_value = Timer3Period - 60;
 	if (EXTI_GetITStatus(EXTI_Line0) != RESET)
 	{
 		if (ppmChannel0 == 0)
@@ -168,15 +169,17 @@ void EXTI0_IRQHandler(void)
 			volatile int diff = actual - ppmChannel0;
 
 			// Turn right
-			if (diff > 1320 && diff < 1990 && enableR)
+			if (diff > 1750 && diff < 2450 && enableR && ( ((diff - 1750) / 600.0) > 0.3 ))
 			{
-				TIM_SetCompare1(TIM3, Timer3Period * ((diff - 1320) / 670.0));
+				volatile double valor = Timer3Period * ((diff - 1750) / 600.0);
+				TIM_SetCompare1(TIM3, (valor >= Timer3Period) ? (Timer3Period - 1) :  valor);
 				TIM_SetCompare2(TIM3, 0);
 			}
 			// Turn left
-			else if (diff < 1320 && diff > 651 && enableL)
+			else if (diff < 1730 && diff > 1000 && enableL && ( ((1730 - diff) / 730.0) > 0.3 ) )
 			{
-				TIM_SetCompare2(TIM3, Timer3Period * ((1320 - diff) / 670.0));
+				volatile double valor = Timer3Period * ((1730 - diff) / 730.0);
+				TIM_SetCompare2(TIM3, (valor >= Timer3Period) ? (Timer3Period-1) : valor);
 				TIM_SetCompare1(TIM3, 0);
 			}
 
