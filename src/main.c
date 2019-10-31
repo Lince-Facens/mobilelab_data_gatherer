@@ -165,10 +165,11 @@ int main(void)
 //			GPIO_SetBits(GPIOA, GPIO_Pin_7);
 //		else
 //			GPIO_ResetBits(GPIOA, GPIO_Pin_7);
-		enableL = GPIO_ReadInputDataBit(GPIOB, GPIO_Pin_12);
-		enableR = GPIO_ReadInputDataBit(GPIOB, GPIO_Pin_13);
+//		enableL = GPIO_ReadInputDataBit(GPIOB, GPIO_Pin_12);
+//		enableR = GPIO_ReadInputDataBit(GPIOB, GPIO_Pin_13);
+		enableL = enableR = 1;
 
-		if (enableL || enableR) {
+		if (!enableL && !enableR) {
 			TIM_SetCompare1(TIM3, 0);
 			TIM_SetCompare2(TIM3, 0);
 			GPIO_ResetBits(GPIOC, LED);

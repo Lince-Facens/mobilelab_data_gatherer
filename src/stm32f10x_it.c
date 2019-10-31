@@ -169,14 +169,14 @@ void EXTI0_IRQHandler(void)
 			volatile int diff = actual - ppmChannel0;
 
 			// Turn right
-			if (diff > 1750 && diff < 2450 && enableR && ( ((diff - 1750) / 600.0) > 0.3 ))
+			if (diff > 1750 && diff < 2450 && enableR && ( ((diff - 1750) / 600.0) > 0.1 ))
 			{
 				volatile double valor = Timer3Period * ((diff - 1750) / 600.0);
 				TIM_SetCompare1(TIM3, (valor >= Timer3Period) ? (Timer3Period - 1) :  valor);
 				TIM_SetCompare2(TIM3, 0);
 			}
 			// Turn left
-			else if (diff < 1730 && diff > 1000 && enableL && ( ((1730 - diff) / 730.0) > 0.3 ) )
+			else if (diff < 1730 && diff > 1000 && enableL && ( ((1730 - diff) / 730.0) > 0.1 ) )
 			{
 				volatile double valor = Timer3Period * ((1730 - diff) / 730.0);
 				TIM_SetCompare2(TIM3, (valor >= Timer3Period) ? (Timer3Period-1) : valor);
