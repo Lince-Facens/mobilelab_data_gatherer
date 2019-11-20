@@ -9,12 +9,10 @@
 
  /* Includes ------------------------------------------------------------------*/
 #include "stm32f10x.h"
+#include "main.h"
 
 /* Private typedef -----------------------------------------------------------*/
 /* Private define ------------------------------------------------------------*/
-#define ADC1_DR    ((uint32_t)0x4001244C)
-#define ARRAYSIZE 3
-#define LED	GPIO_Pin_13
 
 /* Private macro -------------------------------------------------------------*/
 /* Private variables ---------------------------------------------------------*/
@@ -27,7 +25,7 @@ uint16_t Timer3Period = (uint16_t) 665;
 uint8_t enableL = 1, enableR = 1;
 
 /* Private function prototypes -----------------------------------------------*/
-//void RCC_Configuration(void);
+//void RCC_Configuration(void);1787
 //void GPIO_Configuration(void);
 //void NVIC_Configuration(void);
 //void DMA_Configuration(void);
@@ -81,6 +79,11 @@ int main(void)
 
 	GPIO_InitStructure.GPIO_Pin = GPIO_Pin_12 | GPIO_Pin_13;
 	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_IN_FLOATING;
+	GPIO_Init(GPIOB, &GPIO_InitStructure);
+
+	GPIO_InitStructure.GPIO_Pin = REVERSE_ACCELERATION_PIN;
+	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_Out_PP;
+	GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
 	GPIO_Init(GPIOB, &GPIO_InitStructure);
 
 	/* Enable AFIO clock */
@@ -147,7 +150,9 @@ int main(void)
 	TIM_OC2Init(TIM3, &TIM_OCInitStructure);
 	TIM_OC2PreloadConfig(TIM3, TIM_OCPreload_Enable);
 
-	/* PWM1 Mode configuration: Channel3 */
+	/* PWM1 Mode configuration: ChannelLERATION_PIN;
+//	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_Out_PP;
+//	GPIO_Init(GPIOB, &GPIO_InitStructure);3 */
 	TIM_OCInitStructure.TIM_OutputState = TIM_OutputState_Enable;
 	TIM_OCInitStructure.TIM_Pulse = 0;
 
@@ -159,8 +164,11 @@ int main(void)
 	/* TIM3 enable counter */
 	TIM_Cmd(TIM3, ENABLE);
 
+	GPIO_ResetBits(GPIOC, LED);
+	GPIO_ResetBits(GPIOB, REVERSE_ACCELERATION_PIN);
 	while (1)
 	{
+
 //		if (GPIO_ReadInputDataBit(GPIOA, GPIO_Pin_1))
 //			GPIO_SetBits(GPIOA, GPIO_Pin_7);
 //		else
