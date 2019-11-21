@@ -31,6 +31,8 @@ uint32_t left, right;
 extern uint64_t timer;
 extern uint16_t Timer3Period;
 extern uint8_t enableL, enableR;
+extern uint8_t autonomous_mode;
+extern uint32_t adc_init_status;
 
 /** @addtogroup STM32F10x_StdPeriph_Examples
  * @{
@@ -158,7 +160,7 @@ void SysTick_Handler(void)
 void EXTI0_IRQHandler(void)
 {
 	int max_value = Timer3Period - 60;
-	if (EXTI_GetITStatus(EXTI_Line0) != RESET)
+	if (EXTI_GetITStatus(EXTI_Line0) != RESET && !autonomous_mode)
 	{
 		if (ppmChannel0 == 0)
 		{
@@ -199,7 +201,7 @@ void EXTI0_IRQHandler(void)
 */
 void EXTI1_IRQHandler(void)
 {
-	if (EXTI_GetITStatus(EXTI_Line1) != RESET)
+	if (EXTI_GetITStatus(EXTI_Line1) != RESET && !autonomous_mode)
 	{
 		if (ppmChannel1 == 0)
 		{
@@ -224,6 +226,22 @@ void EXTI1_IRQHandler(void)
 
 		/* Clear the  EXTI line 1 pending bit */
 		EXTI_ClearITPendingBit(EXTI_Line1);
+	}
+}
+
+/*
+* @brief  This function handles DMA1 interrupt.
+* @param  None
+* @retval None
+*/
+void DMA1_Channel1_IRQHandler(void)
+{
+	//Test on DMA1 Channel1 Transfer Complete interrupt
+	if (DMA_GetITStatus(DMA1_IT_TC1))
+	{
+		adc_init_status = 1;
+		//Clear DMA1 interrupt pending bits
+		DMA_ClearITPendingBit(DMA1_IT_GL1);
 	}
 }
 

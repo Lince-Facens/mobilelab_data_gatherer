@@ -14,18 +14,30 @@
 /* Private typedef -----------------------------------------------------------*/
 /* Private define ------------------------------------------------------------*/
 
+#define ADC1_DR    ((uint32_t)0x4001244C)
+#define ARRAYSIZE 4
+#define LED	GPIO_Pin_13
+#define AUTONOMOUS_MODE_PIN GPIO_Pin_14
+#define AUTONOMOUS_STEERING_PIN GPIO_Pin_2
+#define AUTONOMOUS_ACCELERATION_PIN GPIO_Pin_3
+#define AUTONOMOUS_STEERING_IDX 0
+#define AUTONOMOUS_ACCELERATION_IDX 1
+#define ENABLE_LEFT_STEERING_PIN GPIO_Pin_12
+#define ENABLE_RIGHT_STEERING_PIN GPIO_Pin_13
+
 /* Private macro -------------------------------------------------------------*/
 /* Private variables ---------------------------------------------------------*/
 ADC_InitTypeDef ADC_InitStructure;
 DMA_InitTypeDef DMA_InitStructure;
-uint32_t status;
+uint32_t adc_init_status;
 __IO uint16_t ADC_values[ARRAYSIZE];
-uint64_t timer = 0;
-uint16_t Timer3Period = (uint16_t) 665;
-uint8_t enableL = 1, enableR = 1;
+uint64_t timer;
+uint16_t Timer3Period;
+uint8_t enableL, enableR;
+uint8_t autonomous_mode;
 
 /* Private function prototypes -----------------------------------------------*/
-//void RCC_Configuration(void);1787
+//void RCC_Configuration(void);
 //void GPIO_Configuration(void);
 //void NVIC_Configuration(void);
 //void DMA_Configuration(void);
@@ -45,6 +57,11 @@ int main(void)
 	TIM_TimeBaseInitTypeDef TIM_TimeBaseStructure;
 	TIM_OCInitTypeDef TIM_OCInitStructure;
 
+	autonomous_mode = 0;
+	enableL = enableR = 0;
+	Timer3Period = (uint16_t) 665;
+	timer = 0;
+
 	// Update SystemCoreClock value
 	SystemCoreClockUpdate();
 	// Configure the SysTick timer to overflow every 1 us
@@ -55,8 +72,14 @@ int main(void)
 	/* Enable GPIOA clock */
 	RCC_APB2PeriphClockCmd(RCC_APB2Periph_GPIOA | RCC_APB2Periph_GPIOB | RCC_APB2Periph_GPIOC, ENABLE);
 
+	/* Enable DMA1 clocks */
+	RCC_AHBPeriphClockCmd(RCC_AHBPeriph_DMA1, ENABLE);
+
+	/* Enable ADC1, ADC2, ADC3 and GPIOC clocks */
+	RCC_APB2PeriphClockCmd(RCC_APB2Periph_ADC1, ENABLE);
+
 	/* Configure PA.00 pin as input floating */
-	GPIO_InitStructure.GPIO_Pin = GPIO_Pin_0 | GPIO_Pin_1;
+	GPIO_InitStructure.GPIO_Pin = GPIO_Pin_0 | GPIO_Pin_1 | AUTONOMOUS_STEERING_PIN | AUTONOMOUS_ACCELERATION_PIN;
 	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_IN_FLOATING;
 	GPIO_Init(GPIOA, &GPIO_InitStructure);
 
@@ -77,7 +100,7 @@ int main(void)
 	GPIO_InitStructure.GPIO_Pin = LED;
 	GPIO_Init(GPIOC, &GPIO_InitStructure);
 
-	GPIO_InitStructure.GPIO_Pin = GPIO_Pin_12 | GPIO_Pin_13;
+	GPIO_InitStructure.GPIO_Pin = ENABLE_LEFT_STEERING_PIN | ENABLE_RIGHT_STEERING_PIN | AUTONOMOUS_MODE_PIN;
 	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_IN_FLOATING;
 	GPIO_Init(GPIOB, &GPIO_InitStructure);
 
@@ -86,12 +109,34 @@ int main(void)
 	GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
 	GPIO_Init(GPIOB, &GPIO_InitStructure);
 
+	/* DMA1 channel1 configuration ----------------------------------------------*/
+	DMA_DeInit(DMA1_Channel1);
+	DMA_InitStructure.DMA_BufferSize = ARRAYSIZE;
+	DMA_InitStructure.DMA_PeripheralBaseAddr = (uint32_t) ADC1_DR;
+	DMA_InitStructure.DMA_MemoryBaseAddr = (uint32_t) ADC_values;
+	DMA_InitStructure.DMA_DIR = DMA_DIR_PeripheralSRC;
+	DMA_InitStructure.DMA_PeripheralInc = DMA_PeripheralInc_Disable;
+	DMA_InitStructure.DMA_MemoryInc = DMA_MemoryInc_Enable;
+	DMA_InitStructure.DMA_PeripheralDataSize = DMA_PeripheralDataSize_HalfWord;
+	DMA_InitStructure.DMA_MemoryDataSize = DMA_MemoryDataSize_HalfWord;
+	DMA_InitStructure.DMA_Mode = DMA_Mode_Circular;
+	DMA_InitStructure.DMA_Priority = DMA_Priority_High;
+	DMA_InitStructure.DMA_M2M = DMA_M2M_Disable;
+	DMA_Init(DMA1_Channel1, &DMA_InitStructure);
+	/* Enable DMA1 channel1 */
+	DMA_ITConfig(DMA1_Channel1, DMA_IT_TC, ENABLE);
+	DMA_Cmd(DMA1_Channel1, ENABLE);
+
+	//Enable DMA1 Channel transfer
+	DMA_Cmd(DMA1_Channel1, ENABLE);
+
 	/* Enable AFIO clock */
 	RCC_APB2PeriphClockCmd(RCC_APB2Periph_AFIO, ENABLE);
 
 	/* Connect EXTI0 Line to PA.00 pin */
 	GPIO_EXTILineConfig(GPIO_PortSourceGPIOA, GPIO_PinSource0);
 
+	/* Connect EXTI0 Line to PA.01 pin */
 	GPIO_EXTILineConfig(GPIO_PortSourceGPIOA, GPIO_PinSource1);
 
 	/* Configure EXTI0 line */
@@ -122,9 +167,53 @@ int main(void)
 	NVIC_InitStructure.NVIC_IRQChannelCmd = ENABLE;
 	NVIC_Init(&NVIC_InitStructure);
 
+	//Enable DMA1 channel IRQ Channel */
+	NVIC_InitStructure.NVIC_IRQChannel = DMA1_Channel1_IRQn;
+	NVIC_InitStructure.NVIC_IRQChannelPreemptionPriority = 7;
+	NVIC_InitStructure.NVIC_IRQChannelSubPriority = 7;
+	NVIC_InitStructure.NVIC_IRQChannelCmd = ENABLE;
+	NVIC_Init(&NVIC_InitStructure);
+
+	/* ADC1 configuration ------------------------------------------------------*/
+	ADC_InitStructure.ADC_Mode = ADC_Mode_Independent;
+	ADC_InitStructure.ADC_ScanConvMode = ENABLE;
+	ADC_InitStructure.ADC_ContinuousConvMode = ENABLE;
+	ADC_InitStructure.ADC_ExternalTrigConv = ADC_ExternalTrigConv_None;
+	ADC_InitStructure.ADC_DataAlign = ADC_DataAlign_Right;
+	ADC_InitStructure.ADC_NbrOfChannel = ARRAYSIZE;
+
+	ADC_Init(ADC1, &ADC_InitStructure);
+	/* ADC1 regular channels configuration */
+	ADC_RegularChannelConfig(ADC1, ADC_Channel_0, 1, ADC_SampleTime_28Cycles5);
+	ADC_RegularChannelConfig(ADC1, ADC_Channel_1, 2, ADC_SampleTime_28Cycles5);
+	ADC_RegularChannelConfig(ADC1, ADC_Channel_2, 3, ADC_SampleTime_28Cycles5);
+	ADC_RegularChannelConfig(ADC1, ADC_Channel_3, 4, ADC_SampleTime_28Cycles5);
+
+	/* Enable ADC1 DMA */
+	ADC_DMACmd(ADC1, ENABLE);
+
+	/* Enable ADC1 */
+	ADC_Cmd(ADC1, ENABLE);
+
+	/* Enable ADC1 reset calibration register */
+	ADC_ResetCalibration(ADC1);
+	/* Check the end of ADC1 reset calibration register */
+	while (ADC_GetResetCalibrationStatus(ADC1));
+
+	/* Start ADC1 calibration */
+	ADC_StartCalibration(ADC1);
+	/* Check the end of ADC1 calibration */
+	while (ADC_GetCalibrationStatus(ADC1))
+		;
+
+	//Start ADC1 Software Conversion
+	ADC_SoftwareStartConvCmd(ADC1, ENABLE);
+	//wait for DMA complete
+	while (!adc_init_status) {};
+	ADC_SoftwareStartConvCmd(ADC1, DISABLE);
+
 	/* Compute the prescaler value */
 	int PrescalerValue = (uint16_t) (SystemCoreClock / (50000)) - 1;
-//	int PrescalerValue = (uint16_t) (SystemCoreClock / (1000000)) - 1;
 	/* Time base configuration */
 	TIM_TimeBaseStructure.TIM_Period = Timer3Period ;
 	TIM_TimeBaseStructure.TIM_Prescaler = PrescalerValue;
@@ -150,9 +239,7 @@ int main(void)
 	TIM_OC2Init(TIM3, &TIM_OCInitStructure);
 	TIM_OC2PreloadConfig(TIM3, TIM_OCPreload_Enable);
 
-	/* PWM1 Mode configuration: ChannelLERATION_PIN;
-//	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_Out_PP;
-//	GPIO_Init(GPIOB, &GPIO_InitStructure);3 */
+	/* PWM1 Mode configuration: Channel */
 	TIM_OCInitStructure.TIM_OutputState = TIM_OutputState_Enable;
 	TIM_OCInitStructure.TIM_Pulse = 0;
 
@@ -166,24 +253,40 @@ int main(void)
 
 	GPIO_ResetBits(GPIOC, LED);
 	GPIO_ResetBits(GPIOB, REVERSE_ACCELERATION_PIN);
+
+	enableR = 1;
 	while (1)
 	{
 
-//		if (GPIO_ReadInputDataBit(GPIOA, GPIO_Pin_1))
-//			GPIO_SetBits(GPIOA, GPIO_Pin_7);
-//		else
-//			GPIO_ResetBits(GPIOA, GPIO_Pin_7);
-//		enableL = GPIO_ReadInputDataBit(GPIOB, GPIO_Pin_12);
-//		enableR = GPIO_ReadInputDataBit(GPIOB, GPIO_Pin_13);
-		enableL = enableR = 1;
+		autonomous_mode = GPIO_ReadInputDataBit(GPIOB, AUTONOMOUS_MODE_PIN);
+		enableL = GPIO_ReadInputDataBit(GPIOB, ENABLE_LEFT_STEERING_PIN);
+		enableR = GPIO_ReadInputDataBit(GPIOB, ENABLE_RIGHT_STEERING_PIN);
 
-		if (!enableL && !enableR) {
+		if (!autonomous_mode && !enableL && !enableR) {
 			TIM_SetCompare1(TIM3, 0);
 			TIM_SetCompare2(TIM3, 0);
 			GPIO_ResetBits(GPIOC, LED);
 		}
 		else {
 			GPIO_SetBits(GPIOC, LED);
+
+		    if (autonomous_mode) {
+			    double steering_value     = ADC_values[AUTONOMOUS_STEERING_IDX];
+			    double acceleration_value = ADC_values[AUTONOMOUS_ACCELERATION_IDX];
+
+			    if (steering_value > 2068) {
+			    	TIM_SetCompare1(TIM3, Timer3Period * steering_value / 4095.0);
+			    	TIM_SetCompare2(TIM3, 0);
+			    }
+			    else if (steering_value < 2028){
+			    	TIM_SetCompare2(TIM3, Timer3Period * -(steering_value - 2048)/2048.0);
+				    TIM_SetCompare1(TIM3, 0);
+		    	}
+
+			    if (acceleration_value > 400) {
+			    	TIM_SetCompare3(TIM3, Timer3Period * acceleration_value/4095.0);
+			    }
+		    }
 		}
 
 	}
