@@ -9,17 +9,21 @@
 
  /* Includes ------------------------------------------------------------------*/
 #include "stm32f10x.h"
+#include "main.h"
 
 /* Private typedef -----------------------------------------------------------*/
 /* Private define ------------------------------------------------------------*/
+
 #define ADC1_DR    ((uint32_t)0x4001244C)
-#define ARRAYSIZE 2
+#define ARRAYSIZE 4
 #define LED	GPIO_Pin_13
 #define AUTONOMOUS_MODE_PIN GPIO_Pin_14
 #define AUTONOMOUS_STEERING_PIN GPIO_Pin_2
 #define AUTONOMOUS_ACCELERATION_PIN GPIO_Pin_3
 #define AUTONOMOUS_STEERING_IDX 0
 #define AUTONOMOUS_ACCELERATION_IDX 1
+#define ENABLE_LEFT_STEERING_PIN GPIO_Pin_12
+#define ENABLE_RIGHT_STEERING_PIN GPIO_Pin_13
 
 /* Private macro -------------------------------------------------------------*/
 /* Private variables ---------------------------------------------------------*/
@@ -96,8 +100,13 @@ int main(void)
 	GPIO_InitStructure.GPIO_Pin = LED;
 	GPIO_Init(GPIOC, &GPIO_InitStructure);
 
-	GPIO_InitStructure.GPIO_Pin = GPIO_Pin_12 | GPIO_Pin_13 | AUTONOMOUS_MODE_PIN;
+	GPIO_InitStructure.GPIO_Pin = ENABLE_LEFT_STEERING_PIN | ENABLE_RIGHT_STEERING_PIN | AUTONOMOUS_MODE_PIN;
 	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_IN_FLOATING;
+	GPIO_Init(GPIOB, &GPIO_InitStructure);
+
+	GPIO_InitStructure.GPIO_Pin = REVERSE_ACCELERATION_PIN;
+	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_Out_PP;
+	GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
 	GPIO_Init(GPIOB, &GPIO_InitStructure);
 
 	/* DMA1 channel1 configuration ----------------------------------------------*/
@@ -127,6 +136,7 @@ int main(void)
 	/* Connect EXTI0 Line to PA.00 pin */
 	GPIO_EXTILineConfig(GPIO_PortSourceGPIOA, GPIO_PinSource0);
 
+	/* Connect EXTI0 Line to PA.01 pin */
 	GPIO_EXTILineConfig(GPIO_PortSourceGPIOA, GPIO_PinSource1);
 
 	/* Configure EXTI0 line */
@@ -174,8 +184,8 @@ int main(void)
 
 	ADC_Init(ADC1, &ADC_InitStructure);
 	/* ADC1 regular channels configuration */
-//	ADC_RegularChannelConfig(ADC1, ADC_Channel_0, 1, ADC_SampleTime_28Cycles5);
-//	ADC_RegularChannelConfig(ADC1, ADC_Channel_1, 2, ADC_SampleTime_28Cycles5);
+	ADC_RegularChannelConfig(ADC1, ADC_Channel_0, 1, ADC_SampleTime_28Cycles5);
+	ADC_RegularChannelConfig(ADC1, ADC_Channel_1, 2, ADC_SampleTime_28Cycles5);
 	ADC_RegularChannelConfig(ADC1, ADC_Channel_2, 3, ADC_SampleTime_28Cycles5);
 	ADC_RegularChannelConfig(ADC1, ADC_Channel_3, 4, ADC_SampleTime_28Cycles5);
 
@@ -204,7 +214,6 @@ int main(void)
 
 	/* Compute the prescaler value */
 	int PrescalerValue = (uint16_t) (SystemCoreClock / (50000)) - 1;
-//	int PrescalerValue = (uint16_t) (SystemCoreClock / (1000000)) - 1;
 	/* Time base configuration */
 	TIM_TimeBaseStructure.TIM_Period = Timer3Period ;
 	TIM_TimeBaseStructure.TIM_Prescaler = PrescalerValue;
@@ -230,7 +239,7 @@ int main(void)
 	TIM_OC2Init(TIM3, &TIM_OCInitStructure);
 	TIM_OC2PreloadConfig(TIM3, TIM_OCPreload_Enable);
 
-	/* PWM1 Mode configuration: Channel3 */
+	/* PWM1 Mode configuration: Channel */
 	TIM_OCInitStructure.TIM_OutputState = TIM_OutputState_Enable;
 	TIM_OCInitStructure.TIM_Pulse = 0;
 
@@ -242,10 +251,16 @@ int main(void)
 	/* TIM3 enable counter */
 	TIM_Cmd(TIM3, ENABLE);
 
+	GPIO_ResetBits(GPIOC, LED);
+	GPIO_ResetBits(GPIOB, REVERSE_ACCELERATION_PIN);
+
+	enableR = 1;
 	while (1)
 	{
 
 		autonomous_mode = GPIO_ReadInputDataBit(GPIOB, AUTONOMOUS_MODE_PIN);
+		enableL = GPIO_ReadInputDataBit(GPIOB, ENABLE_LEFT_STEERING_PIN);
+		enableR = GPIO_ReadInputDataBit(GPIOB, ENABLE_RIGHT_STEERING_PIN);
 
 		if (!autonomous_mode && !enableL && !enableR) {
 			TIM_SetCompare1(TIM3, 0);
@@ -254,24 +269,24 @@ int main(void)
 		}
 		else {
 			GPIO_SetBits(GPIOC, LED);
-		}
 
-		if (autonomous_mode) {
-			double steering_value     = ADC_values[AUTONOMOUS_STEERING_IDX];
-			double acceleration_value = ADC_values[AUTONOMOUS_ACCELERATION_IDX];
+		    if (autonomous_mode) {
+			    double steering_value     = ADC_values[AUTONOMOUS_STEERING_IDX];
+			    double acceleration_value = ADC_values[AUTONOMOUS_ACCELERATION_IDX];
 
-			if (steering_value > 2068) {
-				TIM_SetCompare1(TIM3, Timer3Period * steering_value / 4095.0);
-				TIM_SetCompare2(TIM3, 0);
-			}
-			else if (steering_value < 2028){
-				TIM_SetCompare2(TIM3, Timer3Period * -(steering_value - 2048)/2048.0);
-				TIM_SetCompare1(TIM3, 0);
-			}
+			    if (steering_value > 2068) {
+			    	TIM_SetCompare1(TIM3, Timer3Period * steering_value / 4095.0);
+			    	TIM_SetCompare2(TIM3, 0);
+			    }
+			    else if (steering_value < 2028){
+			    	TIM_SetCompare2(TIM3, Timer3Period * -(steering_value - 2048)/2048.0);
+				    TIM_SetCompare1(TIM3, 0);
+		    	}
 
-			if (acceleration_value > 400) {
-				TIM_SetCompare3(TIM3, Timer3Period * acceleration_value/4095.0);
-			}
+			    if (acceleration_value > 400) {
+			    	TIM_SetCompare3(TIM3, Timer3Period * acceleration_value/4095.0);
+			    }
+		    }
 		}
 
 	}

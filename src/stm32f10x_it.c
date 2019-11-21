@@ -23,9 +23,9 @@
 
 /* Includes ------------------------------------------------------------------*/
 #include "stm32f10x_it.h"
-//#include "_write.c"
+#include "main.h"
 
-uint64_t ppmChannel0 = 0, ppmChannel1;
+uint64_t ppmChannel0 = 0, ppmChannel1 = 0;
 uint32_t left, right;
 
 extern uint64_t timer;
@@ -126,7 +126,8 @@ void SVC_Handler(void)
 /**
  * @brief  This function handles Debug Monitor exception.
  * @param  None
- * @retval None
+ * @retval None#define REVERSE_ACCELERATION_PIN 14
+ *
  */
 void DebugMon_Handler(void)
 {
@@ -212,8 +213,13 @@ void EXTI1_IRQHandler(void)
 			volatile int diff = actual - ppmChannel1;
 
 			if (diff < 2380 && diff > 1780) {
-				 TIM_SetCompare3(TIM3, Timer3Period * ((diff - 1787) / 570.0));
-			 }
+				TIM_SetCompare3(TIM3, Timer3Period * ((diff - 1787) / 570.0));
+				GPIO_ResetBits(GPIOB, REVERSE_ACCELERATION_PIN);
+			}
+			else if (diff < 1700 && diff > 1130) {
+				TIM_SetCompare3(TIM3, Timer3Period * ((diff - 1130) / 570.0));
+				GPIO_SetBits(GPIOB, REVERSE_ACCELERATION_PIN);
+			}
 
 			ppmChannel1 = actual;
 		}
