@@ -10,3 +10,7 @@
 *.hex
 *.map
 *.srec
+
+# Vim files
+*.swp
+*.swo

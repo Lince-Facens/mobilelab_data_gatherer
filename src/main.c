@@ -6,26 +6,12 @@
  * @date    06-August-2019
  * @brief   Main program body
  ******************************************************************************
+*/
 
  /* Includes ------------------------------------------------------------------*/
 #include "stm32f10x.h"
 #include "main.h"
 
-/* Private typedef -----------------------------------------------------------*/
-/* Private define ------------------------------------------------------------*/
-
-#define ADC1_DR    ((uint32_t)0x4001244C)
-#define ARRAYSIZE 4
-#define LED	GPIO_Pin_13
-#define AUTONOMOUS_MODE_PIN GPIO_Pin_14
-#define AUTONOMOUS_STEERING_PIN GPIO_Pin_2
-#define AUTONOMOUS_ACCELERATION_PIN GPIO_Pin_3
-#define AUTONOMOUS_STEERING_IDX 0
-#define AUTONOMOUS_ACCELERATION_IDX 1
-#define ENABLE_LEFT_STEERING_PIN GPIO_Pin_12
-#define ENABLE_RIGHT_STEERING_PIN GPIO_Pin_13
-
-/* Private macro -------------------------------------------------------------*/
 /* Private variables ---------------------------------------------------------*/
 ADC_InitTypeDef ADC_InitStructure;
 DMA_InitTypeDef DMA_InitStructure;
