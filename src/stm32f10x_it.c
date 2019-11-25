@@ -24,6 +24,7 @@
 /* Includes ------------------------------------------------------------------*/
 #include "stm32f10x_it.h"
 #include "main.h"
+#include <math.h>
 
 uint64_t ppmChannel0 = 0, ppmChannel1 = 0;
 uint32_t left, right;
@@ -44,6 +45,26 @@ extern uint32_t adc_init_status;
 
 /* Private typedef -----------------------------------------------------------*/
 /* Private define ------------------------------------------------------------*/
+#define MAX_ACCELERATION_PPM 2100
+#define MIN_ACCELERATION_PPM 1500
+#define ACCELERATION_RANGE fabs(MAX_ACCELERATION_PPM - MIN_ACCELERATION_PPM)
+#define ACCELERATION_MIN_THRESHOLD_PERC 0.1
+#define ACCELERATION_MIN_THRESHOLD ACCELERATION_RANGE * ACCELERATION_MIN_THRESHOLD_PERC
+#define MAX_REVERSE_PPM 900
+#define MIN_REVERSE_PPM 1499
+#define REVERSE_RANGE fabs(MIN_REVERSE_PPM - MAX_REVERSE_PPM)
+#define REVERSE_MIN_THRESHOLD_PERC 0.1
+#define REVERSE_MIN_THRESHOLD REVERSE_RANGE * REVERSE_MIN_THRESHOLD_PERC
+#define MAX_STEERING_LEFT_PPM 2089
+#define MIN_STEERING_LEFT_PPM 1508
+#define LEFT_STEERING_RANGE_PPM fabs(MIN_STEERING_LEFT_PPM - MAX_STEERING_LEFT_PPM)
+#define LEFT_STEERING_MIN_THRESHOLD_PERC 0.1
+#define LEFT_STEERING_MIN_THRESHOLD LEFT_STEERING_RANGE_PPM * LEFT_STEERING_MIN_THRESHOLD_PERC
+#define MAX_STEERING_RIGHT_PPM 909
+#define MIN_STEERING_RIGHT_PPM 1509
+#define RIGHT_STEERING_RANGE_PPM fabs(MAX_STEERING_RIGHT_PPM - MIN_STEERING_RIGHT_PPM)
+#define RIGHT_STEERING_MIN_THRESHOLD_PERC 0.1
+#define RIGHT_STEERING_MIN_THRESHOLD RIGHT_STEERING_RANGE_PPM * RIGHT_STEERING_MIN_THRESHOLD_PERC
 /* Private macro -------------------------------------------------------------*/
 /* Private variables ---------------------------------------------------------*/
 /* Private function prototypes -----------------------------------------------*/
@@ -170,18 +191,18 @@ void EXTI0_IRQHandler(void)
 		{
 			int actual = timer;
 			volatile int diff = actual - ppmChannel0;
-
+			printf("%d\n", timer);
 			// Turn right
-			if (diff > 1750 && diff < 2450 && enableR && ( ((diff - 1750) / 600.0) > 0.1 ))
+			if (diff < MIN_STEERING_RIGHT_PPM && diff > MAX_STEERING_RIGHT_PPM && enableR && ( (MIN_STEERING_RIGHT_PPM - diff) > RIGHT_STEERING_MIN_THRESHOLD ))
 			{
-				volatile double valor = Timer3Period * ((diff - 1750) / 600.0);
+				volatile double valor = Timer3Period * ((MIN_STEERING_RIGHT_PPM - diff) / RIGHT_STEERING_RANGE_PPM);
 				TIM_SetCompare1(TIM3, (valor >= Timer3Period) ? (Timer3Period - 1) :  valor);
 				TIM_SetCompare2(TIM3, 0);
 			}
 			// Turn left
-			else if (diff < 1730 && diff > 1000 && enableL && ( ((1730 - diff) / 730.0) > 0.1 ) )
+			else if (diff > MIN_STEERING_LEFT_PPM && diff < MAX_STEERING_LEFT_PPM && enableL &&  ((diff - MIN_STEERING_LEFT_PPM) > LEFT_STEERING_MIN_THRESHOLD ) )
 			{
-				volatile double valor = Timer3Period * ((1730 - diff) / 730.0);
+				volatile double valor = Timer3Period * ((diff - MIN_STEERING_LEFT_PPM) / LEFT_STEERING_RANGE_PPM);
 				TIM_SetCompare2(TIM3, (valor >= Timer3Period) ? (Timer3Period-1) : valor);
 				TIM_SetCompare1(TIM3, 0);
 			}
@@ -212,12 +233,12 @@ void EXTI1_IRQHandler(void)
 			int actual = timer;
 			volatile int diff = actual - ppmChannel1;
 
-			if (diff < 2380 && diff > 1780) {
-				TIM_SetCompare3(TIM3, Timer3Period * ((diff - 1787) / 570.0));
+            if (diff < MAX_ACCELERATION_PPM && diff > MIN_ACCELERATION_PPM) {
+				TIM_SetCompare3(TIM3, Timer3Period * ((diff - MIN_ACCELERATION_PPM) / ACCELERATION_RANGE));
 				GPIO_ResetBits(GPIOB, REVERSE_ACCELERATION_PIN);
 			}
-			else if (diff < 1700 && diff > 1130) {
-				TIM_SetCompare3(TIM3, Timer3Period * ((diff - 1130) / 570.0));
+			else if (diff < MIN_REVERSE_PPM && diff > MAX_REVERSE_PPM) {
+				TIM_SetCompare3(TIM3, Timer3Period * ((diff - MAX_REVERSE_PPM) / REVERSE_RANGE));
 				GPIO_SetBits(GPIOB, REVERSE_ACCELERATION_PIN);
 			}
 
