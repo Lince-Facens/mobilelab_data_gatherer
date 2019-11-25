@@ -11,6 +11,7 @@
  /* Includes ------------------------------------------------------------------*/
 #include "stm32f10x.h"
 #include "main.h"
+#include <stdio.h>
 
 /* Private variables ---------------------------------------------------------*/
 uint32_t adc_init_status;
@@ -26,7 +27,7 @@ void RCC_Configuration(void);
 void GPIO_Configuration(void);
 void NVIC_Configuration(void);
 void DMA_Configuration(void);
-void ADC_Configurationperiod(void);
+void ADC_Configuration(void);
 void EXTI_Configuration(void);
 void TIM_Configuration(void);
 /* Private functions ---------------------------------------------------------*/
@@ -86,7 +87,7 @@ void TIM_Configuration(void)
  * @param  None
  * @retval None
  */
-void ADC_Configurationperiod(void)
+void ADC_Configuration(void)
 {
     ADC_InitTypeDef ADC_InitStructure;
 
@@ -154,11 +155,11 @@ void NVIC_Configuration(void)
 	NVIC_Init(&NVIC_InitStructure);
 
 	//Enable DMA1 channel IRQ Channel */
-	NVIC_InitStructure.NVIC_IRQChannel = DMA1_Channel1_IRQn;
-	NVIC_InitStructure.NVIC_IRQChannelPreemptionPriority = 7;
-	NVIC_InitStructure.NVIC_IRQChannelSubPriority = 7;
-	NVIC_InitStructure.NVIC_IRQChannelCmd = ENABLE;
-	NVIC_Init(&NVIC_InitStructure);
+//	NVIC_InitStructure.NVIC_IRQChannel = DMA1_Channel1_IRQn;
+//	NVIC_InitStructure.NVIC_IRQChannelPreemptionPriority = 7;
+//	NVIC_InitStructure.NVIC_IRQChannelSubPriority = 7;
+//	NVIC_InitStructure.NVIC_IRQChannelCmd = ENABLE;
+//	NVIC_Init(&NVIC_InitStructure);
 }
 
 /*
@@ -283,10 +284,10 @@ void RCC_Configuration(void)
 	RCC_APB2PeriphClockCmd(RCC_APB2Periph_GPIOA | RCC_APB2Periph_GPIOB | RCC_APB2Periph_GPIOC, ENABLE);
 
 	/* Enable DMA1 clocks */
-	RCC_AHBPeriphClockCmd(RCC_AHBPeriph_DMA1, ENABLE);
+	// RCC_AHBPeriphClockCmd(RCC_AHBPeriph_DMA1, ENABLE);
 
 	/* Enable ADC1, ADC2, ADC3 and GPIOC clocks */
-	RCC_APB2PeriphClockCmd(RCC_APB2Periph_ADC1, ENABLE);
+	// RCC_APB2PeriphClockCmd(RCC_APB2Periph_ADC1, ENABLE);
 
 	/* Enable AFIO clock */
 	RCC_APB2PeriphClockCmd(RCC_APB2Periph_AFIO, ENABLE);
@@ -301,10 +302,10 @@ void hardwareSetup(void)
 {
     RCC_Configuration();
     GPIO_Configuration();
-    DMA_Configuration();
-    EXTI_configuration();
+//    DMA_Configuration();
+    EXTI_Configuration();
     NVIC_Configuration();
-    ADC_Configuration();
+//    ADC_Configuration();
     TIM_Configuration();
 }
 
@@ -315,7 +316,7 @@ void hardwareSetup(void)
  */
 int main(void)
 {
-
+	printf("Teste-------------------------------------------------------------------------------------\n");
 	autonomous_mode = 0;
 	enableL = enableR = 0;
 	Timer3Period = (uint16_t) 665;
@@ -330,7 +331,8 @@ int main(void)
 	while (1)
 	{
 
-		autonomous_mode = GPIO_ReadInputDataBit(GPIOB, AUTONOMOUS_MODE_PIN);
+//		autonomous_mode = GPIO_ReadInputDataBit(GPIOB, AUTONOMOUS_MODE_PIN);
+		autonomous_mode = 0;
 		enableL = GPIO_ReadInputDataBit(GPIOB, ENABLE_LEFT_STEERING_PIN);
 		enableR = GPIO_ReadInputDataBit(GPIOB, ENABLE_RIGHT_STEERING_PIN);
 
