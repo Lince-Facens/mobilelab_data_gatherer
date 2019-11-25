@@ -316,7 +316,6 @@ void hardwareSetup(void)
  */
 int main(void)
 {
-	printf("Teste-------------------------------------------------------------------------------------\n");
 	autonomous_mode = 0;
 	enableL = enableR = 0;
 	Timer3Period = (uint16_t) 665;
@@ -331,8 +330,7 @@ int main(void)
 	while (1)
 	{
 
-//		autonomous_mode = GPIO_ReadInputDataBit(GPIOB, AUTONOMOUS_MODE_PIN);
-		autonomous_mode = 0;
+		autonomous_mode = GPIO_ReadInputDataBit(GPIOB, AUTONOMOUS_MODE_PIN);
 		enableL = GPIO_ReadInputDataBit(GPIOB, ENABLE_LEFT_STEERING_PIN);
 		enableR = GPIO_ReadInputDataBit(GPIOB, ENABLE_RIGHT_STEERING_PIN);
 
