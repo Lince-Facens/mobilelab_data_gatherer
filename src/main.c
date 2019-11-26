@@ -9,6 +9,9 @@
 */
 
  /* Includes ------------------------------------------------------------------*/
+#include "FreeRTOS.h"
+#include "task.h"
+
 #include "stm32f10x.h"
 #include "main.h"
 #include <stdio.h>
@@ -16,7 +19,6 @@
 /* Private variables ---------------------------------------------------------*/
 uint32_t adc_init_status;
 __IO uint16_t ADC_values[ARRAYSIZE];
-uint64_t timer;
 uint16_t Timer3Period;
 uint8_t enableL, enableR;
 uint8_t autonomous_mode;
@@ -30,6 +32,7 @@ void DMA_Configuration(void);
 void ADC_Configuration(void);
 void EXTI_Configuration(void);
 void TIM_Configuration(void);
+static void prvPPM2PWM(void *pvParameters);
 /* Private functions ---------------------------------------------------------*/
 
 /* 
@@ -276,7 +279,7 @@ void RCC_Configuration(void)
 	// Update SystemCoreClock value
 	SystemCoreClockUpdate();
 	// Configure the SysTick timer to overflow every 1 us
-	SysTick_Config(SystemCoreClock / 1000000);
+	//SysTick_Config(SystemCoreClock / 1000000);
 
 	RCC_APB1PeriphClockCmd(RCC_APB1Periph_TIM3, ENABLE);
 
@@ -310,23 +313,10 @@ void hardwareSetup(void)
 }
 
 /**
- * @brief  Main program
- * @param  None
- * @retval None
+ * @brief Converts the PPM signal to PWM
  */
-int main(void)
+static void prvPPM2PWM(void *pvParameters)
 {
-	autonomous_mode = 0;
-	enableL = enableR = 0;
-	Timer3Period = (uint16_t) 665;
-	timer = 0;
-
-    // Initializes hardware
-    hardwareSetup();
-
-	GPIO_ResetBits(GPIOC, LED);
-	GPIO_ResetBits(GPIOB, REVERSE_ACCELERATION_PIN);
-
 	while (1)
 	{
 
@@ -362,8 +352,29 @@ int main(void)
 		}
 
 	}
-
 }
+
+int main(void)
+{
+	autonomous_mode = 0;
+	enableL = enableR = 0;
+	Timer3Period = (uint16_t) 665;
+
+	// Initializes hardware
+	hardwareSetup();
+
+	GPIO_ResetBits(GPIOC, LED);
+	GPIO_ResetBits(GPIOB, REVERSE_ACCELERATION_PIN);
+
+	xTaskCreate(prvPPM2PWM, "PPM-to-PWM-Converter", configMINIMAL_STACK_SIZE, NULL, tskIDLE_PRIORITY, NULL);
+
+	vTaskStartScheduler();
+
+	while (1);
+
+	return 0;
+}
+
 
 #ifdef  USE_FULL_ASSERT
 

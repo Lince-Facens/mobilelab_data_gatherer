@@ -23,13 +23,13 @@
 
 /* Includes ------------------------------------------------------------------*/
 #include "stm32f10x_it.h"
+#include "FreeRTOS.h"
 #include "main.h"
 #include <math.h>
 
 uint64_t ppmChannel0 = 0, ppmChannel1 = 0;
 uint32_t left, right;
 
-extern uint64_t timer;
 extern uint16_t Timer3Period;
 extern uint8_t enableL, enableR;
 extern uint8_t autonomous_mode;
@@ -136,15 +136,6 @@ void UsageFault_Handler(void)
 }
 
 /**
- * @brief  This function handles SVCall exception.
- * @param  None
- * @retval None
- */
-void SVC_Handler(void)
-{
-}
-
-/**
  * @brief  This function handles Debug Monitor exception.
  * @param  None
  * @retval None#define REVERSE_ACCELERATION_PIN 14
@@ -152,25 +143,6 @@ void SVC_Handler(void)
  */
 void DebugMon_Handler(void)
 {
-}
-
-/**
- * @brief  This function handles PendSV_Handler exception.
- * @param  None
- * @retval None
- */
-void PendSV_Handler(void)
-{
-}
-
-/**
- * @brief  This function handles SysTick Handler.
- * @param  None
- * @retval None
- */
-void SysTick_Handler(void)
-{
-	timer++;
 }
 
 /**
@@ -183,14 +155,15 @@ void EXTI0_IRQHandler(void)
 	int max_value = Timer3Period - 60;
 	if (EXTI_GetITStatus(EXTI_Line0) != RESET && !autonomous_mode)
 	{
+		int timeElapsed = (xTaskGetTickCount() * 1000000) / configTICK_RATE_HZ;
+
 		if (ppmChannel0 == 0)
 		{
-			ppmChannel0 = timer;
+			ppmChannel0 = timeElapsed;
 		}
 		else
 		{
-			int actual = timer;
-			volatile int diff = actual - ppmChannel0;
+			volatile int diff = timeElapsed - ppmChannel0;
 
 			if (diff < MAX_STEERING_LEFT_PPM) {
 				// Turn right
@@ -213,7 +186,7 @@ void EXTI0_IRQHandler(void)
 				}
 			}
 
-			ppmChannel0 = actual;
+			ppmChannel0 = timeElapsed;
 		}
 
 		/* Clear the  EXTI line 0 pending bit */
@@ -230,14 +203,15 @@ void EXTI1_IRQHandler(void)
 {
 	if (EXTI_GetITStatus(EXTI_Line1) != RESET && !autonomous_mode)
 	{
+		int timeElapsed = (xTaskGetTickCount() * 1000000) / configTICK_RATE_HZ;
+
 		if (ppmChannel1 == 0)
 		{
-			ppmChannel1 = timer;
+			ppmChannel1 = timeElapsed;
 		}
 		else
 		{
-			int actual = timer;
-			volatile int diff = actual - ppmChannel1;
+			volatile int diff = timeElapsed - ppmChannel1;
 
             if (diff < MAX_ACCELERATION_PPM && diff > MIN_ACCELERATION_PPM) {
 				TIM_SetCompare3(TIM3, Timer3Period * ((diff - MIN_ACCELERATION_PPM) / ACCELERATION_RANGE));
@@ -248,7 +222,7 @@ void EXTI1_IRQHandler(void)
 				GPIO_SetBits(GPIOB, REVERSE_ACCELERATION_PIN);
 			}
 
-			ppmChannel1 = actual;
+			ppmChannel1 = timeElapsed;
 		}
 
 		/* Clear the  EXTI line 1 pending bit */
