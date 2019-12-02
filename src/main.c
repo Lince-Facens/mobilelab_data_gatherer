@@ -19,9 +19,8 @@
 /* Private variables ---------------------------------------------------------*/
 uint32_t adc_init_status;
 __IO uint16_t ADC_values[ARRAYSIZE];
-uint16_t Timer3Period;
-uint8_t enableL, enableR;
-uint8_t autonomous_mode;
+uint8_t enableL = 0, enableR = 0;
+uint8_t autonomous_mode = 0;
 
 /* Private function prototypes -----------------------------------------------*/
 void hardwareSetup(void);
@@ -48,7 +47,7 @@ void TIM_Configuration(void)
 	/* Compute the prescaler value */
 	int PrescalerValue = (uint16_t) (SystemCoreClock / (50000)) - 1;
 	/* Time base configuration */
-	TIM_TimeBaseStructure.TIM_Period = Timer3Period ;
+	TIM_TimeBaseStructure.TIM_Period = PWM_TIMER_PERIOD;
 	TIM_TimeBaseStructure.TIM_Prescaler = PrescalerValue;
 	TIM_TimeBaseStructure.TIM_ClockDivision = 0;
 	TIM_TimeBaseStructure.TIM_CounterMode = TIM_CounterMode_Up;
@@ -62,7 +61,6 @@ void TIM_Configuration(void)
 	TIM_OCInitStructure.TIM_OCPolarity = TIM_OCPolarity_High;
 
 	TIM_OC1Init(TIM3, &TIM_OCInitStructure);
-
 	TIM_OC1PreloadConfig(TIM3, TIM_OCPreload_Enable);
 
 	/* PWM1 Mode configuration: Channel2 */
@@ -337,16 +335,16 @@ static void prvPPM2PWM(void *pvParameters)
 			    double acceleration_value = ADC_values[AUTONOMOUS_ACCELERATION_IDX];
 
 			    if (steering_value > 2068) {
-			    	TIM_SetCompare1(TIM3, Timer3Period * steering_value / 4095.0);
+			    	TIM_SetCompare1(TIM3, PWM_TIMER_PERIOD * steering_value / 4095.0);
 			    	TIM_SetCompare2(TIM3, 0);
 			    }
 			    else if (steering_value < 2028){
-			    	TIM_SetCompare2(TIM3, Timer3Period * -(steering_value - 2048)/2048.0);
+			    	TIM_SetCompare2(TIM3, PWM_TIMER_PERIOD * -(steering_value - 2048)/2048.0);
 				    TIM_SetCompare1(TIM3, 0);
 		    	}
 
 			    if (acceleration_value > 400) {
-			    	TIM_SetCompare3(TIM3, Timer3Period * acceleration_value/4095.0);
+			    	TIM_SetCompare3(TIM3, PWM_TIMER_PERIOD * acceleration_value/4095.0);
 			    }
 		    }
 		}
@@ -356,10 +354,6 @@ static void prvPPM2PWM(void *pvParameters)
 
 int main(void)
 {
-	autonomous_mode = 0;
-	enableL = enableR = 0;
-	Timer3Period = (uint16_t) 665;
-
 	// Initializes hardware
 	hardwareSetup();
 
