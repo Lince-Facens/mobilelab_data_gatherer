@@ -17,7 +17,6 @@
 #include <stdio.h>
 
 /* Private variables ---------------------------------------------------------*/
-uint32_t adc_init_status;
 __IO uint16_t ADC_values[ARRAYSIZE];
 uint8_t enableL = 0, enableR = 0;
 uint8_t autonomous_mode = 0;
@@ -102,10 +101,8 @@ void ADC_Configuration(void)
 
 	ADC_Init(ADC1, &ADC_InitStructure);
 	/* ADC1 regular channels configuration */
-	ADC_RegularChannelConfig(ADC1, ADC_Channel_0, 1, ADC_SampleTime_28Cycles5);
-	ADC_RegularChannelConfig(ADC1, ADC_Channel_1, 2, ADC_SampleTime_28Cycles5);
-	ADC_RegularChannelConfig(ADC1, ADC_Channel_2, 3, ADC_SampleTime_28Cycles5);
-	ADC_RegularChannelConfig(ADC1, ADC_Channel_3, 4, ADC_SampleTime_28Cycles5);
+	ADC_RegularChannelConfig(ADC1, ADC_Channel_2, 1, ADC_SampleTime_28Cycles5);
+	ADC_RegularChannelConfig(ADC1, ADC_Channel_3, 2, ADC_SampleTime_28Cycles5);
 
 	/* Enable ADC1 DMA */
 	ADC_DMACmd(ADC1, ENABLE);
@@ -121,15 +118,10 @@ void ADC_Configuration(void)
 	/* Start ADC1 calibration */
 	ADC_StartCalibration(ADC1);
 	/* Check the end of ADC1 calibration */
-	while (ADC_GetCalibrationStatus(ADC1))
-		;
+	while (ADC_GetCalibrationStatus(ADC1));
 
 	//Start ADC1 Software Conversion
 	ADC_SoftwareStartConvCmd(ADC1, ENABLE);
-	//wait for DMA complete
-	while (!adc_init_status) {};
-	ADC_SoftwareStartConvCmd(ADC1, DISABLE);
-
 }
 
 /*
@@ -154,13 +146,6 @@ void NVIC_Configuration(void)
 	NVIC_InitStructure.NVIC_IRQChannelSubPriority = 0x00;
 	NVIC_InitStructure.NVIC_IRQChannelCmd = ENABLE;
 	NVIC_Init(&NVIC_InitStructure);
-
-	//Enable DMA1 channel IRQ Channel */
-//	NVIC_InitStructure.NVIC_IRQChannel = DMA1_Channel1_IRQn;
-//	NVIC_InitStructure.NVIC_IRQChannelPreemptionPriority = 7;
-//	NVIC_InitStructure.NVIC_IRQChannelSubPriority = 7;
-//	NVIC_InitStructure.NVIC_IRQChannelCmd = ENABLE;
-//	NVIC_Init(&NVIC_InitStructure);
 }
 
 /*
@@ -214,7 +199,7 @@ void DMA_Configuration(void)
 	DMA_InitStructure.DMA_PeripheralDataSize = DMA_PeripheralDataSize_HalfWord;
 	DMA_InitStructure.DMA_MemoryDataSize = DMA_MemoryDataSize_HalfWord;
 	DMA_InitStructure.DMA_Mode = DMA_Mode_Circular;
-	DMA_InitStructure.DMA_Priority = DMA_Priority_High;
+	DMA_InitStructure.DMA_Priority = DMA_Priority_Low;
 	DMA_InitStructure.DMA_M2M = DMA_M2M_Disable;
 	DMA_Init(DMA1_Channel1, &DMA_InitStructure);
 	/* Enable DMA1 channel1 */
@@ -285,10 +270,10 @@ void RCC_Configuration(void)
 	RCC_APB2PeriphClockCmd(RCC_APB2Periph_GPIOA | RCC_APB2Periph_GPIOB | RCC_APB2Periph_GPIOC, ENABLE);
 
 	/* Enable DMA1 clocks */
-	// RCC_AHBPeriphClockCmd(RCC_AHBPeriph_DMA1, ENABLE);
+	 RCC_AHBPeriphClockCmd(RCC_AHBPeriph_DMA1, ENABLE);
 
 	/* Enable ADC1, ADC2, ADC3 and GPIOC clocks */
-	// RCC_APB2PeriphClockCmd(RCC_APB2Periph_ADC1, ENABLE);
+	 RCC_APB2PeriphClockCmd(RCC_APB2Periph_ADC1, ENABLE);
 
 	/* Enable AFIO clock */
 	RCC_APB2PeriphClockCmd(RCC_APB2Periph_AFIO, ENABLE);
@@ -303,10 +288,10 @@ void hardwareSetup(void)
 {
     RCC_Configuration();
     GPIO_Configuration();
-//    DMA_Configuration();
+    DMA_Configuration();
     EXTI_Configuration();
     NVIC_Configuration();
-//    ADC_Configuration();
+    ADC_Configuration();
     TIM_Configuration();
 }
 

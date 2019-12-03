@@ -11,7 +11,7 @@
 
 /* Private define */
 #define ADC1_DR    ((uint32_t)0x4001244C)
-#define ARRAYSIZE 4
+#define ARRAYSIZE 2
 #define LED	GPIO_Pin_13
 #define REVERSE_ACCELERATION_PIN GPIO_Pin_15
 #define AUTONOMOUS_MODE_PIN GPIO_Pin_14
