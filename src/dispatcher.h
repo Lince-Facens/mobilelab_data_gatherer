@@ -11,7 +11,7 @@
 #define STEERING_CALIBRATE 0 // Whether it'll print out periods to calibrate the values below
 
 #define ACCELERATION_MAX_ERROR 10 // The error that a full acceleration may have
-#define ACCELERATION_MIN_THRESHOLD 0.15 // Threshold (%) from stationary to accelerating
+#define ACCELERATION_MIN_THRESHOLD 0.1 // Threshold (%) from stationary to accelerating
 
 #define ACCELERATION_CENTER 1490 // Not accelerating
 #define ACCELERATION_TOTAL_FORWARD 2090 // Fully accelerating forward

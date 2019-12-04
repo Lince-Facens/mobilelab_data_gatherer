@@ -7,6 +7,7 @@ uint32_t ppmPrevDiff0 = 0, ppmPrevDiff1 = 0;
 
 extern uint32_t ppmChannel0;
 extern uint32_t ppmChannel1;
+extern uint32_t ppmLastTimeout;
 extern uint8_t enableL, enableR;
 extern uint8_t autonomous_mode;
 
@@ -92,12 +93,15 @@ void DebugMon_Handler(void)
  */
 void EXTI0_IRQHandler(void)
 {
-	if (EXTI_GetITStatus(EXTI_Line0) == RESET || autonomous_mode) return;
+	if (EXTI_GetITStatus(EXTI_Line0) == RESET || autonomous_mode) {
+		EXTI_ClearITPendingBit(EXTI_Line0);
+		return;
+	}
 
-	int timeElapsed = xTaskGetTickCount();
+	TickType_t timeElapsed = xTaskGetTickCount();
 
 	// Avoids calculating the difference on the first run
-	if (ppmChannel0 > 0) {
+	if (ppmChannel0 > 0 && timeElapsed - CONTROLLER_WARMUP >= ppmLastTimeout) {
 
 		int diff = timeElapsed - ppmChannel0;
 
@@ -122,12 +126,15 @@ void EXTI0_IRQHandler(void)
 */
 void EXTI1_IRQHandler(void)
 {
-	if (EXTI_GetITStatus(EXTI_Line1) == RESET || autonomous_mode) return;
+	if (EXTI_GetITStatus(EXTI_Line1) == RESET || autonomous_mode) {
+		EXTI_ClearITPendingBit(EXTI_Line1);
+		return;
+	}
 
-	int timeElapsed = xTaskGetTickCount();
+	TickType_t timeElapsed = xTaskGetTickCount();
 
 	// Avoids calculating the difference on the first run
-	if (ppmChannel1 > 0) {
+	if (ppmChannel1 > 0 && timeElapsed - CONTROLLER_WARMUP >= ppmLastTimeout) {
 
 		int diff = timeElapsed - ppmChannel1;
 

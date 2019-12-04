@@ -19,9 +19,9 @@
 
 /* Private variables ---------------------------------------------------------*/
 __IO uint16_t ADC_values[ARRAYSIZE];
-uint8_t enableL = 0, enableR = 0;
+uint8_t enableL = 1, enableR = 1;
 uint8_t autonomous_mode = 0;
-uint32_t ppmChannel0 = 0, ppmChannel1 = 0;
+uint32_t ppmChannel0 = 0, ppmChannel1 = 0, ppmLastTimeout = 0;
 
 /* Private function prototypes -----------------------------------------------*/
 void hardwareSetup(void);
@@ -305,17 +305,17 @@ static void prvPPM2PWM(void *pvParameters)
 {
 	while (1)
 	{
-		autonomous_mode = GPIO_ReadInputDataBit(GPIOB, AUTONOMOUS_MODE_PIN);
-		enableL = GPIO_ReadInputDataBit(GPIOB, ENABLE_LEFT_STEERING_PIN);
-		enableR = GPIO_ReadInputDataBit(GPIOB, ENABLE_RIGHT_STEERING_PIN);
+		//autonomous_mode = GPIO_ReadInputDataBit(GPIOB, AUTONOMOUS_MODE_PIN);
+		//enableL = GPIO_ReadInputDataBit(GPIOB, ENABLE_LEFT_STEERING_PIN);
+		//enableR = GPIO_ReadInputDataBit(GPIOB, ENABLE_RIGHT_STEERING_PIN);
 
 		if (!autonomous_mode && !enableL && !enableR) {
 			TIM_SetCompare1(TIM3, 0);
 			TIM_SetCompare2(TIM3, 0);
-			GPIO_ResetBits(GPIOC, LED);
+			//GPIO_ResetBits(GPIOC, LED);
 		}
 		else {
-			GPIO_SetBits(GPIOC, LED);
+			//GPIO_SetBits(GPIOC, LED);
 
 		    if (autonomous_mode) {
 			    double steering_value     = ADC_values[AUTONOMOUS_STEERING_IDX];
@@ -358,6 +358,7 @@ static void prvControllerTimeout(void *pvParameters)
 		if (ticks < ppmChannel0 && ticks < ppmChannel1 && ticks >= CONTROLLER_TIMEOUT) {
 			// A tick overflow must have happened and it went back to zero
 			handleControllerTimeout();
+			ppmLastTimeout = ticks;
 
 		} else {
 
@@ -365,6 +366,7 @@ static void prvControllerTimeout(void *pvParameters)
 
 			if (ppmChannel0 < ticks && ppmChannel1 < ticks) {
 				handleControllerTimeout();
+				ppmLastTimeout = ticks;
 			}
 		}
 
