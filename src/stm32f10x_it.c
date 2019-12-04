@@ -3,9 +3,10 @@
 #include "main.h"
 #include "dispatcher.h"
 
-uint32_t ppmChannel0 = 0, ppmChannel1 = 0;
 uint32_t ppmPrevDiff0 = 0, ppmPrevDiff1 = 0;
 
+extern uint32_t ppmChannel0;
+extern uint32_t ppmChannel1;
 extern uint8_t enableL, enableR;
 extern uint8_t autonomous_mode;
 extern uint32_t adc_init_status;

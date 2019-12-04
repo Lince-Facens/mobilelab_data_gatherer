@@ -13,6 +13,7 @@
 #include "task.h"
 
 #include "stm32f10x.h"
+#include "dispatcher.h"
 #include "main.h"
 #include <stdio.h>
 
@@ -21,6 +22,7 @@ uint32_t adc_init_status;
 __IO uint16_t ADC_values[ARRAYSIZE];
 uint8_t enableL = 0, enableR = 0;
 uint8_t autonomous_mode = 0;
+uint32_t ppmChannel0 = 0, ppmChannel1 = 0;
 
 /* Private function prototypes -----------------------------------------------*/
 void hardwareSetup(void);
@@ -32,6 +34,7 @@ void ADC_Configuration(void);
 void EXTI_Configuration(void);
 void TIM_Configuration(void);
 static void prvPPM2PWM(void *pvParameters);
+static void prvControllerTimeout(void *pvParameters);
 /* Private functions ---------------------------------------------------------*/
 
 /* 
@@ -317,7 +320,6 @@ static void prvPPM2PWM(void *pvParameters)
 {
 	while (1)
 	{
-
 		autonomous_mode = GPIO_ReadInputDataBit(GPIOB, AUTONOMOUS_MODE_PIN);
 		enableL = GPIO_ReadInputDataBit(GPIOB, ENABLE_LEFT_STEERING_PIN);
 		enableR = GPIO_ReadInputDataBit(GPIOB, ENABLE_RIGHT_STEERING_PIN);
@@ -352,6 +354,39 @@ static void prvPPM2PWM(void *pvParameters)
 	}
 }
 
+/**
+ * @brief Checks whether the controller has been disconnected by timing out 200 ms after the last interruption
+ */
+static void prvControllerTimeout(void *pvParameters)
+{
+	TickType_t xNextWakeTime = xTaskGetTickCount();
+
+	while (1) {
+
+		if (autonomous_mode) {
+			vTaskDelayUntil(&xNextWakeTime, CONTROLLER_TIMEOUT);
+			continue;
+		}
+
+		TickType_t ticks = xTaskGetTickCount();
+
+		if (ticks < ppmChannel0 && ticks < ppmChannel1 && ticks >= CONTROLLER_TIMEOUT) {
+			// A tick overflow must have happened and it went back to zero
+			handleControllerTimeout();
+
+		} else {
+
+			ticks -= CONTROLLER_TIMEOUT;
+
+			if (ppmChannel0 < ticks && ppmChannel1 < ticks) {
+				handleControllerTimeout();
+			}
+		}
+
+		vTaskDelayUntil(&xNextWakeTime, CONTROLLER_TIMEOUT);
+	}
+}
+
 int main(void)
 {
 	// Initializes hardware
@@ -361,6 +396,8 @@ int main(void)
 	GPIO_ResetBits(GPIOB, REVERSE_ACCELERATION_PIN);
 
 	xTaskCreate(prvPPM2PWM, "PPM-to-PWM-Converter", configMINIMAL_STACK_SIZE, NULL, tskIDLE_PRIORITY, NULL);
+
+	xTaskCreate(prvControllerTimeout, "Controller-Timeout", configMINIMAL_STACK_SIZE, NULL, tskIDLE_PRIORITY, NULL);
 
 	vTaskStartScheduler();
 

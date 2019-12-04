@@ -105,6 +105,7 @@ void updateAcceleration(double diff)
 		// No acceleration - We'll set it back to zero
 
 		TIM_SetCompare3(TIM3, 0);
+		GPIO_ResetBits(GPIOB, REVERSE_ACCELERATION_PIN);
 
 	}
 
@@ -112,3 +113,12 @@ void updateAcceleration(double diff)
 }
 
 #endif // ACCELERATION_CALIBRATE
+
+
+void handleControllerTimeout()
+{
+	// Resets the acceleration and steering
+	TIM_SetCompare1(TIM3, 0);
+	TIM_SetCompare2(TIM3, 0);
+	TIM_SetCompare3(TIM3, 0);
+}
