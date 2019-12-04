@@ -9,7 +9,6 @@ extern uint32_t ppmChannel0;
 extern uint32_t ppmChannel1;
 extern uint8_t enableL, enableR;
 extern uint8_t autonomous_mode;
-extern uint32_t adc_init_status;
 
 /******************************************************************************/
 /*            Cortex-M3 Processor Exceptions Handlers                         */
@@ -145,22 +144,6 @@ void EXTI1_IRQHandler(void)
 
 	// Clears the EXTI line 1 pending bit
 	EXTI_ClearITPendingBit(EXTI_Line1);
-}
-
-/*
-* @brief  This function handles DMA1 interrupt.
-* @param  None
-* @retval None
-*/
-void DMA1_Channel1_IRQHandler(void)
-{
-	//Test on DMA1 Channel1 Transfer Complete interrupt
-	if (DMA_GetITStatus(DMA1_IT_TC1))
-	{
-		adc_init_status = 1;
-		//Clear DMA1 interrupt pending bits
-		DMA_ClearITPendingBit(DMA1_IT_GL1);
-	}
 }
 
 /******************************************************************************/
