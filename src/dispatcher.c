@@ -1,7 +1,8 @@
 #include <stdlib.h>
 #include <math.h>
+
 #include "stm32f10x_it.h"
-#include "main.h"
+#include "peripherals.h"
 #include "dispatcher.h"
 
 /* CONSTANTS ------------------------------------------------------------*/
@@ -113,7 +114,6 @@ void updateAcceleration(double diff)
 }
 
 #endif // ACCELERATION_CALIBRATE
-
 
 void handleControllerTimeout()
 {

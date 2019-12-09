@@ -104,9 +104,9 @@ void ADC_Configuration(void)
 void NVIC_Configuration(void)
 {
 	NVIC_InitTypeDef NVIC_InitStructure;
+
 	/* Enable and set EXTI0 Interrupt to the lowest priority */
 	NVIC_InitStructure.NVIC_IRQChannel = EXTI0_IRQn;
-
 	NVIC_InitStructure.NVIC_IRQChannelPreemptionPriority = 0x00;
 	NVIC_InitStructure.NVIC_IRQChannelSubPriority = 0x00;
 	NVIC_InitStructure.NVIC_IRQChannelCmd = ENABLE;
@@ -191,37 +191,46 @@ void GPIO_Configuration(void)
 {
 	GPIO_InitTypeDef GPIO_InitStructure;
 
-	/* Configure PA.00 pin as input floating */
+	// A0 - Controller Steering
+	// A1 - Controller Acceleration
+	// A2 - Autonomous Steering
+	// A3 - Autonomous Acceleration
 	GPIO_InitStructure.GPIO_Pin = GPIO_Pin_0 | GPIO_Pin_1 | AUTONOMOUS_STEERING_PIN | AUTONOMOUS_ACCELERATION_PIN;
 	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_IN_FLOATING;
 	GPIO_Init(GPIOA, &GPIO_InitStructure);
 
-	/* Configure PWM outputs */
+	// A6 - Right Steering PWM Output
+	// A7 - Left Steering PWM Output
 	GPIO_InitStructure.GPIO_Pin = GPIO_Pin_6 | GPIO_Pin_7;
 	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_AF_PP;
 	GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
 	GPIO_Init(GPIOA, &GPIO_InitStructure);
 
-	/* Configure PWM outputs */
+	// B0 - Acceleration PWM Output
 	GPIO_InitStructure.GPIO_Pin = GPIO_Pin_0;
 	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_AF_PP;
 	GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
 	GPIO_Init(GPIOB, &GPIO_InitStructure);
 
-	GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
-	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_Out_PP;
-	GPIO_InitStructure.GPIO_Pin = LED;
-	GPIO_Init(GPIOC, &GPIO_InitStructure);
-
-	GPIO_InitStructure.GPIO_Pin = ENABLE_LEFT_STEERING_PIN | ENABLE_RIGHT_STEERING_PIN | AUTONOMOUS_MODE_PIN;
-	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_IN_FLOATING;
-	GPIO_Init(GPIOB, &GPIO_InitStructure);
-
+	// B15 - Reverse Acceleration Boolean Output
 	GPIO_InitStructure.GPIO_Pin = REVERSE_ACCELERATION_PIN;
 	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_Out_PP;
 	GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
 	GPIO_Init(GPIOB, &GPIO_InitStructure);
 
+	// C13 - Green Led Boolean Output
+	GPIO_InitStructure.GPIO_Pin = LED;
+	GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
+	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_Out_PP;
+	GPIO_Init(GPIOC, &GPIO_InitStructure);
+
+	// B12 - Enable Left Steering Boolean Input
+	// B13 - Enable Right Steering Boolean Input
+	// B14 - Enable Autonomous Mode Boolean Input
+	GPIO_InitStructure.GPIO_Pin = ENABLE_LEFT_STEERING_PIN | ENABLE_RIGHT_STEERING_PIN | AUTONOMOUS_MODE_PIN;
+	GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
+	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_IN_FLOATING;
+	GPIO_Init(GPIOB, &GPIO_InitStructure);
 }
 
 /*
@@ -231,20 +240,19 @@ void GPIO_Configuration(void)
  */
 void RCC_Configuration(void)
 {
-	// Update SystemCoreClock value
+	/* Update SystemCoreClock value */
 	SystemCoreClockUpdate();
-	// Configure the SysTick timer to overflow every 1 us
-	//SysTick_Config(SystemCoreClock / 1000000);
 
+	/* Enable timer 3 clock */
 	RCC_APB1PeriphClockCmd(RCC_APB1Periph_TIM3, ENABLE);
 
-	/* Enable GPIO clock */
+	/* Enable GPIOA, GPIOB and GPIOC clocks */
 	RCC_APB2PeriphClockCmd(RCC_APB2Periph_GPIOA | RCC_APB2Periph_GPIOB | RCC_APB2Periph_GPIOC, ENABLE);
 
-	/* Enable DMA1 clocks */
+	/* Enable DMA1 clock */
 	 RCC_AHBPeriphClockCmd(RCC_AHBPeriph_DMA1, ENABLE);
 
-	/* Enable ADC1, ADC2, ADC3 and GPIOC clocks */
+	/* Enable ADC1 clock */
 	 RCC_APB2PeriphClockCmd(RCC_APB2Periph_ADC1, ENABLE);
 
 	/* Enable AFIO clock */
