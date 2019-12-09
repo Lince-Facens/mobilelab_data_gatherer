@@ -1,8 +1,5 @@
 /*
- * main.h
- *
- *  Created on: 5 de nov de 2019
- *      Author: Emanuel Huber
+ * Main configuration constants
  */
 
 #ifndef MAIN_H_
