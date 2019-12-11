@@ -34,40 +34,44 @@ static void prvPPM2PWM(void *pvParameters)
 {
 	while (1)
 	{
-		autonomous_mode = GPIO_ReadInputDataBit(GPIOB, AUTONOMOUS_MODE_PIN);
+		autonomous_mode = AUTONOMOUS_MODE_TEST || GPIO_ReadInputDataBit(GPIOB, AUTONOMOUS_MODE_PIN);
 		//enableL = GPIO_ReadInputDataBit(GPIOB, ENABLE_LEFT_STEERING_PIN);
 		//enableR = GPIO_ReadInputDataBit(GPIOB, ENABLE_RIGHT_STEERING_PIN);
 
-		if (!autonomous_mode && !enableL && !enableR) {
+		if (!enableL && !enableR) {
+
 			TIM_SetCompare1(TIM3, 0);
 			TIM_SetCompare2(TIM3, 0);
-			//GPIO_ResetBits(GPIOC, LED);
-		}
-		else {
-			//GPIO_SetBits(GPIOC, LED);
+			TIM_SetCompare3(TIM3, 0);
+			GPIO_SetBits(GPIOB, REVERSE_ACCELERATION_PIN);
 
-		    if (autonomous_mode || AUTONOMOUS_MODE_TEST) {
-			    double steering_value     = ADC_values[AUTONOMOUS_STEERING_IDX];
-			    double acceleration_value = ADC_values[AUTONOMOUS_ACCELERATION_IDX];
+		} else if (autonomous_mode) {
 
-			    if (steering_value > 2068) {
-			    	TIM_SetCompare1(TIM3, PWM_TIMER_PERIOD * steering_value / 4095.0);
-			    	TIM_SetCompare2(TIM3, 0);
-			    }
-			    else if (steering_value < 2028){
-			    	TIM_SetCompare2(TIM3, PWM_TIMER_PERIOD * -(steering_value - 2048)/2048.0);
-				    TIM_SetCompare1(TIM3, 0);
-		    	}
+			double steering_value     = ADC_values[AUTONOMOUS_STEERING_IDX];
+			double acceleration_value = ADC_values[AUTONOMOUS_ACCELERATION_IDX];
 
-			    if (acceleration_value > 2090) {
-			    	TIM_SetCompare3(TIM3, PWM_TIMER_PERIOD * acceleration_value / 4095.0);
-			    	GPIO_ResetBits(GPIOB, REVERSE_ACCELERATION_PIN);
-			    }
-			    else if (acceleration_value < 2000) {
-			    	TIM_SetCompare3(TIM3, PWM_TIMER_PERIOD * -(acceleration_value - 2048)/2048.0);
-			    	GPIO_SetBits(GPIOB, REVERSE_ACCELERATION_PIN);
-			    }
-		    }
+			if (steering_value > 2068) {
+				TIM_SetCompare1(TIM3, PWM_TIMER_PERIOD * steering_value / 4095.0);
+				TIM_SetCompare2(TIM3, 0);
+			} else if (steering_value < 2028) {
+				TIM_SetCompare2(TIM3, PWM_TIMER_PERIOD * -(steering_value - 2048)/2048.0);
+				TIM_SetCompare1(TIM3, 0);
+			} else if (steering_value >= 2028 && steering_value <= 2068) {
+				TIM_SetCompare2(TIM3, 0);
+				TIM_SetCompare1(TIM3, 0);
+			}
+
+			if (acceleration_value > 2090) {
+				TIM_SetCompare3(TIM3, PWM_TIMER_PERIOD * acceleration_value / 4095.0);
+				GPIO_ResetBits(GPIOB, REVERSE_ACCELERATION_PIN);
+			} else if (acceleration_value < 2000) {
+				TIM_SetCompare3(TIM3, PWM_TIMER_PERIOD * -(acceleration_value - 2048)/2048.0);
+				GPIO_SetBits(GPIOB, REVERSE_ACCELERATION_PIN);
+			} else if (acceleration_value >= 2000 && acceleration_value <= 2090) {
+				TIM_SetCompare3(TIM3, 0);
+				GPIO_ResetBits(GPIOB, REVERSE_ACCELERATION_PIN);
+			}
+
 		}
 
 	}

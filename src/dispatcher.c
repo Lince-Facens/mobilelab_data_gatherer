@@ -121,4 +121,5 @@ void handleControllerTimeout()
 	TIM_SetCompare1(TIM3, 0);
 	TIM_SetCompare2(TIM3, 0);
 	TIM_SetCompare3(TIM3, 0);
+	GPIO_ResetBits(GPIOB, REVERSE_ACCELERATION_PIN);
 }
