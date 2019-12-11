@@ -24,6 +24,7 @@
 #define PWM_TIMER_PERIOD 665
 #define CONTROLLER_TIMEOUT (configTICK_RATE_HZ / 5) // 200 ms
 #define CONTROLLER_WARMUP (configTICK_RATE_HZ) // 1000 ms
+#define AUTONOMOUS_MODE_TEST 1
 
 
 

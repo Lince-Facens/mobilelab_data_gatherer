@@ -305,7 +305,7 @@ static void prvPPM2PWM(void *pvParameters)
 {
 	while (1)
 	{
-		//autonomous_mode = GPIO_ReadInputDataBit(GPIOB, AUTONOMOUS_MODE_PIN);
+		autonomous_mode = GPIO_ReadInputDataBit(GPIOB, AUTONOMOUS_MODE_PIN);
 		//enableL = GPIO_ReadInputDataBit(GPIOB, ENABLE_LEFT_STEERING_PIN);
 		//enableR = GPIO_ReadInputDataBit(GPIOB, ENABLE_RIGHT_STEERING_PIN);
 
@@ -317,7 +317,7 @@ static void prvPPM2PWM(void *pvParameters)
 		else {
 			//GPIO_SetBits(GPIOC, LED);
 
-		    if (autonomous_mode) {
+		    if (autonomous_mode || AUTONOMOUS_MODE_TEST) {
 			    double steering_value     = ADC_values[AUTONOMOUS_STEERING_IDX];
 			    double acceleration_value = ADC_values[AUTONOMOUS_ACCELERATION_IDX];
 
@@ -332,6 +332,15 @@ static void prvPPM2PWM(void *pvParameters)
 
 			    if (acceleration_value > 400) {
 			    	TIM_SetCompare3(TIM3, PWM_TIMER_PERIOD * acceleration_value/4095.0);
+			    }
+
+			    if (acceleration_value > 2090) {
+			    	TIM_SetCompare3(TIM3, PWM_TIMER_PERIOD * acceleration_value / 4095.0);
+			    	GPIO_ResetBits(GPIOB, REVERSE_ACCELERATION_PIN);
+			    }
+			    else if (acceleration_value < 2000) {
+			    	TIM_SetCompare3(TIM3, PWM_TIMER_PERIOD * -(acceleration_value - 2048)/2048.0);
+			    	GPIO_SetBits(GPIOB, REVERSE_ACCELERATION_PIN);
 			    }
 		    }
 		}
