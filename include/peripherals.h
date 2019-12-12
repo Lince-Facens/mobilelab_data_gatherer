@@ -12,6 +12,7 @@
 #define ENABLE_RIGHT_STEERING_PIN GPIO_Pin_13 // B13 (Input)
 #define AUTONOMOUS_MODE_PIN GPIO_Pin_14 // B14 (Input)
 #define REVERSE_ACCELERATION_PIN GPIO_Pin_15 // B15 (Output)
+#define CONTROL_ENABLED_PIN GPIO_Pin_8 // A8 (Output)
 
 #define ARRAYSIZE 2
 #define ADC1_DR ((uint32_t)0x4001244C)

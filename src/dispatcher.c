@@ -63,6 +63,8 @@ void updateSteering(double diff, uint8_t enableL, uint8_t enableR)
 
 	}
 
+	GPIO_SetBits(GPIOA, CONTROL_ENABLED_PIN);
+
 	// In case the steering goes over the limits, we'll leave it as is, keeping the previous value
 }
 
@@ -110,6 +112,8 @@ void updateAcceleration(double diff)
 
 	}
 
+	GPIO_SetBits(GPIOA, CONTROL_ENABLED_PIN);
+
 	// In case the acceleration goes over the limits, we'll leave it as is, keeping the previous value
 }
 
@@ -122,4 +126,5 @@ void handleControllerTimeout()
 	TIM_SetCompare2(TIM3, 0);
 	TIM_SetCompare3(TIM3, 0);
 	GPIO_ResetBits(GPIOB, REVERSE_ACCELERATION_PIN);
+	GPIO_ResetBits(GPIOA, CONTROL_ENABLED_PIN);
 }

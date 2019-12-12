@@ -17,9 +17,12 @@
 #include "dispatcher.h"
 #include "main.h"
 
+#include <math.h>
+
 /* Private variables ---------------------------------------------------------*/
 uint8_t enableL = 1, enableR = 1;
 uint8_t autonomous_mode = 0;
+int8_t autonomous_mode_count = 1;
 uint32_t ppmChannel0 = 0, ppmChannel1 = 0, ppmLastTimeout = 0;
 
 /* Private function prototypes -----------------------------------------------*/
@@ -38,12 +41,21 @@ static void prvPPM2PWM(void *pvParameters)
 		//enableL = GPIO_ReadInputDataBit(GPIOB, ENABLE_LEFT_STEERING_PIN);
 		//enableR = GPIO_ReadInputDataBit(GPIOB, ENABLE_RIGHT_STEERING_PIN);
 
+		if (autonomous_mode) {
+			autonomous_mode_count = fmin(autonomous_mode_count + 1, AUTONOMOUS_MODE_WINDOW_SIZE * 2);
+		} else {
+			autonomous_mode_count = fmax(autonomous_mode_count - 1, 0);
+		}
+
+		autonomous_mode = autonomous_mode_count >= AUTONOMOUS_MODE_WINDOW_SIZE;
+
 		if (!enableL && !enableR) {
 
 			TIM_SetCompare1(TIM3, 0);
 			TIM_SetCompare2(TIM3, 0);
 			TIM_SetCompare3(TIM3, 0);
 			GPIO_SetBits(GPIOB, REVERSE_ACCELERATION_PIN);
+			GPIO_ResetBits(GPIOA, CONTROL_ENABLED_PIN);
 
 		} else if (autonomous_mode) {
 
@@ -71,6 +83,8 @@ static void prvPPM2PWM(void *pvParameters)
 				TIM_SetCompare3(TIM3, 0);
 				GPIO_ResetBits(GPIOB, REVERSE_ACCELERATION_PIN);
 			}
+
+			GPIO_SetBits(GPIOA, CONTROL_ENABLED_PIN);
 
 		}
 
