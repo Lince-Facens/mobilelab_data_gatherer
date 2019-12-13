@@ -68,7 +68,7 @@ void ADC_Configuration(void)
 	ADC_InitStructure.ADC_ContinuousConvMode = ENABLE;
 	ADC_InitStructure.ADC_ExternalTrigConv = ADC_ExternalTrigConv_None;
 	ADC_InitStructure.ADC_DataAlign = ADC_DataAlign_Right;
-	ADC_InitStructure.ADC_NbrOfChannel = ARRAYSIZE;
+	ADC_InitStructure.ADC_NbrOfChannel = ADC_ARRAYSIZE;
 
 	ADC_Init(ADC1, &ADC_InitStructure);
 	/* ADC1 regular channels configuration */
@@ -161,7 +161,7 @@ void DMA_Configuration(void)
 
 	/* DMA1 channel1 configuration ----------------------------------------------*/
 	DMA_DeInit(DMA1_Channel1);
-	DMA_InitStructure.DMA_BufferSize = ARRAYSIZE;
+	DMA_InitStructure.DMA_BufferSize = ADC_ARRAYSIZE;
 	DMA_InitStructure.DMA_PeripheralBaseAddr = (uint32_t) ADC1_DR;
 	DMA_InitStructure.DMA_MemoryBaseAddr = (uint32_t) ADC_values;
 	DMA_InitStructure.DMA_DIR = DMA_DIR_PeripheralSRC;

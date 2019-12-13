@@ -14,12 +14,14 @@
 #define REVERSE_ACCELERATION_PIN GPIO_Pin_15 // B15 (Output)
 #define CONTROL_ENABLED_PIN GPIO_Pin_8 // A8 (Output)
 
-#define ARRAYSIZE 2
-#define ADC1_DR ((uint32_t)0x4001244C)
-
 #define PWM_TIMER_PERIOD 665
 
-__IO uint16_t ADC_values[ARRAYSIZE];
+#define ADC_AUTONOMOUS_STEERING 0 // Autonomous Steering Index
+#define ADC_AUTONOMOUS_ACCELERATION 1 // Autonomous Acceleration Index
+#define ADC_ARRAYSIZE 2
+#define ADC1_DR ((uint32_t)0x4001244C)
+
+__IO uint16_t ADC_values[ADC_ARRAYSIZE];
 
 
 /* Public functions */

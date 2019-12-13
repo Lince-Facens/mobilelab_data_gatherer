@@ -107,7 +107,7 @@ void EXTI0_IRQHandler(void)
 
 		// Avoids using the longest part of the wave
 		if (diff > 0 && ppmPrevDiff0 > diff) {
-			updateSteering(diff * (1000000.0 / configTICK_RATE_HZ), enableL, enableR);
+			updateControllerSteering(diff * (1000000.0 / configTICK_RATE_HZ), enableL, enableR);
 		}
 
 		ppmPrevDiff0 = diff;
@@ -140,7 +140,7 @@ void EXTI1_IRQHandler(void)
 
 		// Avoids using the longest part of the wave
 		if (diff > 0 && ppmPrevDiff1 > diff) {
-			updateAcceleration(diff * (1000000.0 / configTICK_RATE_HZ));
+			updateControllerAcceleration(diff * (1000000.0 / configTICK_RATE_HZ));
 		}
 
 		ppmPrevDiff1 = diff;

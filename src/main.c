@@ -11,18 +11,16 @@
  /* Includes ------------------------------------------------------------------*/
 #include "FreeRTOS.h"
 #include "task.h"
-#include "stm32f10x.h"
 
 #include "peripherals.h"
 #include "dispatcher.h"
-#include "main.h"
+#include "actions.h"
 
 #include <math.h>
 
 /* Private variables ---------------------------------------------------------*/
 uint8_t enableL = 1, enableR = 1;
 uint8_t autonomous_mode = 0;
-int8_t autonomous_mode_count = 1;
 uint32_t ppmChannel0 = 0, ppmChannel1 = 0, ppmLastTimeout = 0;
 
 /* Private function prototypes -----------------------------------------------*/
@@ -35,59 +33,8 @@ static void prvControllerTimeout(void *pvParameters);
  */
 static void prvPPM2PWM(void *pvParameters)
 {
-	while (1)
-	{
-		autonomous_mode = AUTONOMOUS_MODE_TEST || GPIO_ReadInputDataBit(GPIOB, AUTONOMOUS_MODE_PIN);
-		//enableL = GPIO_ReadInputDataBit(GPIOB, ENABLE_LEFT_STEERING_PIN);
-		//enableR = GPIO_ReadInputDataBit(GPIOB, ENABLE_RIGHT_STEERING_PIN);
-
-		if (autonomous_mode) {
-			autonomous_mode_count = fmin(autonomous_mode_count + 1, AUTONOMOUS_MODE_WINDOW_SIZE * 2);
-		} else {
-			autonomous_mode_count = fmax(autonomous_mode_count - 1, 0);
-		}
-
-		autonomous_mode = autonomous_mode_count >= AUTONOMOUS_MODE_WINDOW_SIZE;
-
-		if (!enableL && !enableR) {
-
-			TIM_SetCompare1(TIM3, 0);
-			TIM_SetCompare2(TIM3, 0);
-			TIM_SetCompare3(TIM3, 0);
-			GPIO_SetBits(GPIOB, REVERSE_ACCELERATION_PIN);
-			GPIO_ResetBits(GPIOA, CONTROL_ENABLED_PIN);
-
-		} else if (autonomous_mode) {
-
-			double steering_value     = ADC_values[AUTONOMOUS_STEERING_IDX];
-			double acceleration_value = ADC_values[AUTONOMOUS_ACCELERATION_IDX];
-
-			if (steering_value > 2068) {
-				TIM_SetCompare1(TIM3, PWM_TIMER_PERIOD * steering_value / 4095.0);
-				TIM_SetCompare2(TIM3, 0);
-			} else if (steering_value < 2028) {
-				TIM_SetCompare2(TIM3, PWM_TIMER_PERIOD * -(steering_value - 2048)/2048.0);
-				TIM_SetCompare1(TIM3, 0);
-			} else if (steering_value >= 2028 && steering_value <= 2068) {
-				TIM_SetCompare2(TIM3, 0);
-				TIM_SetCompare1(TIM3, 0);
-			}
-
-			if (acceleration_value > 2090) {
-				TIM_SetCompare3(TIM3, PWM_TIMER_PERIOD * acceleration_value / 4095.0);
-				GPIO_ResetBits(GPIOB, REVERSE_ACCELERATION_PIN);
-			} else if (acceleration_value < 2000) {
-				TIM_SetCompare3(TIM3, PWM_TIMER_PERIOD * -(acceleration_value - 2048)/2048.0);
-				GPIO_SetBits(GPIOB, REVERSE_ACCELERATION_PIN);
-			} else if (acceleration_value >= 2000 && acceleration_value <= 2090) {
-				TIM_SetCompare3(TIM3, 0);
-				GPIO_ResetBits(GPIOB, REVERSE_ACCELERATION_PIN);
-			}
-
-			GPIO_SetBits(GPIOA, CONTROL_ENABLED_PIN);
-
-		}
-
+	while (1) {
+		updateAutonomousMode();
 	}
 }
 
@@ -117,6 +64,7 @@ static void prvControllerTimeout(void *pvParameters)
 			ticks -= CONTROLLER_TIMEOUT;
 
 			if (ppmChannel0 < ticks && ppmChannel1 < ticks) {
+				// Both tick counters have been halted for more than the timeout period
 				handleControllerTimeout();
 				ppmLastTimeout = ticks;
 			}
@@ -131,8 +79,8 @@ int main(void)
 	// Initializes hardware
 	setupPeripherals();
 
-	GPIO_ResetBits(GPIOC, LED);
-	GPIO_ResetBits(GPIOB, REVERSE_ACCELERATION_PIN);
+	setLedEnabled();
+	setAccelerationForward();
 
 	xTaskCreate(prvPPM2PWM, "PPM-to-PWM-Converter", configMINIMAL_STACK_SIZE, NULL, tskIDLE_PRIORITY, NULL);
 
